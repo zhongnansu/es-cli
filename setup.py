@@ -6,6 +6,8 @@ install_requirements = [
     "click >= 4.1",
     "prompt_toolkit >= 2.0.6",
     "Pygments >= 2.0",
+    "cli_helpers[styles] >= 1.2.0",
+    "elasticsearch==7.0.1"
 ]
 
 _version_re = re.compile(r"__version__\s+=\s+(.*)")

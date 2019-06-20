@@ -1,10 +1,4 @@
-from datetime import datetime
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk
-from elasticsearch_dsl import search
-from elasticsearch import Transport
-from elasticsearch import ConnectionPool
-import json
 
 # es = Elasticsearch({'host': 'localhost', 'url_prefix': '_opendistro/_sql/'})
 # es = Elasticsearch(
@@ -31,14 +25,23 @@ def get_connection(endpoint):
 
 
 def query(es, query):
+
+    # deal with input
+    final_query = query.strip().strip(';')
+
     data = es.transport.perform_request(url="/_opendistro/_sql", method="POST", params={'format': 'jdbc'}, body={
-        'query': query
+        'query': final_query
     })
 
     return data
 
 
 
+
+
 # endpoint = "http://localhost:9200"
-# query = "select * from test1 limit 50"
-# get_connection(endpoint)
+# s = "select * from es_1,es_2"
+# es = get_connection(endpoint)
+# data, header = query(es, s)
+#
+# format_output(data, header)

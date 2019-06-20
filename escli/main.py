@@ -7,6 +7,8 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
 from pygments.lexers.sql import SqlLexer
 from .connection import get_connection, query
+from cli_helpers.tabular_output import TabularOutputFormatter
+from .esbuffer import pg_is_multiline
 
 
 class ESCli:
@@ -43,8 +45,21 @@ class ESCli:
         self.connection = None
 
     def _build_cli(self):
+
+        self.multiline_continuation_char = '.'
+        self.multi_line = True
+        self.multiline_mode = 'escli'
+
+        def get_continuation(width, line_number, is_soft_wrap):
+            continuation = self.multiline_continuation_char * (width - 1) + " "
+            return [("class:continuation", continuation)]
+
         prompt_app = PromptSession(
-            lexer=PygmentsLexer(SqlLexer), completer=self.sql_completer, style=self.style)
+            lexer=PygmentsLexer(SqlLexer),
+            completer=self.sql_completer,
+            prompt_continuation=get_continuation,
+            multiline=pg_is_multiline(self),
+            style=self.style)
 
         return prompt_app
 
@@ -55,7 +70,7 @@ class ESCli:
 
         while True:
             try:
-                text = self.prompt_app.prompt('> ')
+                text = self.prompt_app.prompt('escli > ')
             except KeyboardInterrupt:
                 continue  # Control-C pressed. Try again.
             except EOFError:
@@ -63,11 +78,13 @@ class ESCli:
 
             if self.connection:
                 try:
-                    res = query(self.connection, text)
-                    print(res['datarows'])
+                    data = query(self.connection, text)
+                    output = format_output(data)
+
+                    click.echo('\n'.join(output))
                 except Exception as e:
                     print(repr(e))
-            # TODO: handle case that connection lost during the cli is sill running
+            # TODO: handle case that connection lost during the cli is sill running. _handle_server_closed_connection(text)
 
         print('GoodElasticBye!')
 
@@ -77,12 +94,38 @@ class ESCli:
 def cli(endpoint):
     """Provide endpoint for connection"""
     click.echo("Hi %s" % endpoint)
+
     # TODO: echo or print more info of server and cli
+    #   print("Server: PostgreSQL", self.pgexecute.server_version)
+    #   print("Version:", __version__)
+    #   print("Chat: https://gitter.im/dbcli/pgcli")
+    #   print("Mail: https://groups.google.com/forum/#!forum/pgcli")
+    #   print("Home: http://pgcli.com")
 
 
     escli = ESCli()
 
     escli.run_cli(endpoint)
+
+
+def format_output(data):
+
+    formatter = TabularOutputFormatter(format_name='simple')
+
+    datarows = data['datarows']
+    schema = data['schema']
+
+    field = []
+    type = []
+
+    # get header and type as list
+    for i in schema:
+        field.append(i['name'])
+        type.append(i['type'])
+
+    output = formatter.format_output(datarows, field)
+
+    return output
 
 
 if __name__ == "__main__":

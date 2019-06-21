@@ -19,6 +19,7 @@ with open("escli/__init__.py", "rb") as f:
 
 description = "CLI for Elasticsearch Open Distro SQL. With auto-completion and syntax highlighting."
 
+# TODO Add windows adaptability support
 setup(
     name="escli",
     author="AES",

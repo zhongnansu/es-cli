@@ -9,7 +9,6 @@ from elasticsearch import Elasticsearch
 # res = es.search(body={"query": "SELECT * FROM test1 LIMIT 50"})
 
 
-
 def get_connection(endpoint):
     es = Elasticsearch([endpoint], verify_certs=True)
 

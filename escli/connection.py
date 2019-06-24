@@ -1,5 +1,7 @@
 from elasticsearch import Elasticsearch
-from .__init__ import __version__
+import click
+import sys
+
 
 # es = Elasticsearch({'host': 'localhost', 'url_prefix': '_opendistro/_sql/'})
 # es = Elasticsearch(
@@ -16,32 +18,31 @@ def get_connection(endpoint):
     if es.ping():
 
         info = es.info()
-        version = info['version']['number']
+        es_version = info['version']['number']
 
-        print("Server: ES Open Distro: %s" % version)
-        print("Version:", __version__)
-        print("Home: https://opendistro.github.io/for-elasticsearch-docs/")
-
-        return es
+        return es, es_version
 
     else:
-        return None
+        click.echo('Can not connect to endpoint: ' + endpoint)
+        sys.exit(0)
 
 
-def query(es, query):
-
+def execute_query(es, query, output_format='jdbc', explain=False):
     # deal with input
     final_query = query.strip().strip(';')
 
-    data = es.transport.perform_request(url="/_opendistro/_sql", method="POST", params={'format': 'jdbc'}, body={
-        'query': final_query
-    })
+    data = es.transport.perform_request(url="/_opendistro/_sql/", method="POST", params={'format': output_format},
+                                        body={
+                                            'query': final_query
+                                        })
+
+    # todo this is not flexible at all, change to use setting to config params, use only one perform_request at the end
+    if explain:
+        data = es.transport.perform_request(url="/_opendistro/_sql/_explain", method="POST", body={
+            'query': final_query
+        })
 
     return data
-
-
-
-
 
 # endpoint = "http://localhost:9200"
 # s = "select * from es_1,es_2"

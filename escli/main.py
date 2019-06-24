@@ -1,5 +1,9 @@
 from __future__ import unicode_literals
+from .__init__ import __version__
 import click
+import sys
+
+
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
@@ -19,7 +23,7 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 
 from pygments.lexers.sql import SqlLexer
-from .connection import get_connection, query
+from .connection import get_connection, execute_query
 from cli_helpers.tabular_output import TabularOutputFormatter
 from cli_helpers.tabular_output.preprocessors import align_decimals, format_numbers
 from .esbuffer import pg_is_multiline
@@ -136,12 +140,16 @@ class ESCli:
 
     def run_cli(self, endpoint):
 
-        self.connection = get_connection(endpoint)
+        self.connection, es_version = get_connection(endpoint)
         self.prompt_app = self._build_cli()
         self.setting = {
             "max_width": self.prompt_app.output.get_size().columns,
             "style_output": self.style_output,
         }
+
+        print("Server: ES Open Distro: %s" % es_version)
+        print("Version:", __version__)
+        print("Home: https://opendistro.github.io/for-elasticsearch-docs/")
 
         while True:
             if self.connection:
@@ -151,28 +159,51 @@ class ESCli:
                     continue  # Control-C pressed. Try again.
                 except EOFError:
                     break  # Control-D pressed.
-            else:
-                click.echo('Can not connect to endpoint: ' + endpoint)
-                break
+
 
             # TODO: handle case that connection lost during the cli is sill running. _handle_server_closed_connection(text)
-            try:
-                data = query(self.connection, text)
-                output = format_output(data, self.setting)
+                try:
+                    data = execute_query(self.connection, text)
+                    output = format_output(data, self.setting)
 
-                click.echo('\n'.join(output))
-            except Exception as e:
-                print(repr(e))
+                    click.echo('\n'.join(output))
+                except Exception as e:
+                    print(repr(e))
 
         print('GoodElasticBye!')
 
 
 @click.command()
 @click.argument('endpoint', default="http://localhost:9200")
-def cli(endpoint):
-    """Provide endpoint for connection"""
+@click.option(
+    "-q",
+    "--query",
+    "query",
+    type=click.STRING,
+    help="run single query without getting in to the console",
+)
+@click.option(
+    "-e",
+    "--explain",
+    "explain",
+    is_flag=True,
+    help="run single query without getting in to the console",
+)
+def cli(endpoint, query, explain):
+    """Provide endpoint for elasticsearch connection"""
 
-    # TODO: echo or print more info of server and cli
+    # TODO: echo or print more info of server and cli here
+
+    # handle single query without more interaction with user
+    if query:
+        es, es_version = get_connection(endpoint)
+        if explain:
+            res = execute_query(es, query, explain=True)
+        else:
+            res = execute_query(es, query, 'raw')
+
+        click.echo(res)
+        sys.exit(0)
 
 
     escli = ESCli()

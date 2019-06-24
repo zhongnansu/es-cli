@@ -88,6 +88,8 @@ class ESCli:
     def __init__(self):
         self.prompt_app = None
         self.connection = None
+        self.setting = None
+
 
     def _build_cli(self):
 
@@ -123,25 +125,30 @@ class ESCli:
 
         self.connection = get_connection(endpoint)
         self.prompt_app = self._build_cli()
+        self.setting = {
+            "max_width": self.prompt_app.output.get_size().columns
+        }
 
         while True:
-            try:
-                text = self.prompt_app.prompt(message='escli@' + endpoint + ' >')
-            except KeyboardInterrupt:
-                continue  # Control-C pressed. Try again.
-            except EOFError:
-                break  # Control-D pressed.
-
             if self.connection:
                 try:
-                    data = query(self.connection, text)
-                    output = format_output(data)
-
-                    click.echo('\n'.join(output))
-                except Exception as e:
-                    print(repr(e))
+                    text = self.prompt_app.prompt(message='escli@' + endpoint + '> ')
+                except KeyboardInterrupt:
+                    continue  # Control-C pressed. Try again.
+                except EOFError:
+                    break  # Control-D pressed.
+            else:
+                click.echo('Can not connect to endpoint: ' + endpoint)
+                break
 
             # TODO: handle case that connection lost during the cli is sill running. _handle_server_closed_connection(text)
+            try:
+                data = query(self.connection, text)
+                output = format_output(data, self.setting)
+
+                click.echo('\n'.join(output))
+            except Exception as e:
+                print(repr(e))
 
         print('GoodElasticBye!')
 
@@ -150,14 +157,8 @@ class ESCli:
 @click.argument('endpoint', default="http://localhost:9200")
 def cli(endpoint):
     """Provide endpoint for connection"""
-    click.echo("Hi %s" % endpoint)
 
     # TODO: echo or print more info of server and cli
-    #   print("Server: PostgreSQL", self.pgexecute.server_version)
-    #   print("Version:", __version__)
-    #   print("Chat: https://gitter.im/dbcli/pgcli")
-    #   print("Mail: https://groups.google.com/forum/#!forum/pgcli")
-    #   print("Home: http://pgcli.com")
 
 
     escli = ESCli()
@@ -165,9 +166,11 @@ def cli(endpoint):
     escli.run_cli(endpoint)
 
 
-def format_output(data):
+def format_output(data, settings):
 
-    formatter = TabularOutputFormatter(format_name='simple')
+    formatter = TabularOutputFormatter(format_name='psql')
+
+    max_width = settings['max_width']
 
     datarows = data['datarows']
     schema = data['schema']
@@ -181,6 +184,11 @@ def format_output(data):
         types.append(i['type'])
 
     output = formatter.format_output(datarows, fields)
+    first_line = next(output)
+
+    # check width overflow, change format_name for better visual effect
+    if len(first_line) > max_width:
+        output = formatter.format_output(datarows, fields, format_name='vertical')
 
     return output
 

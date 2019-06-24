@@ -1,4 +1,5 @@
 from elasticsearch import Elasticsearch
+from .__init__ import __version__
 
 # es = Elasticsearch({'host': 'localhost', 'url_prefix': '_opendistro/_sql/'})
 # es = Elasticsearch(
@@ -16,7 +17,11 @@ def get_connection(endpoint):
 
         info = es.info()
         version = info['version']['number']
-        print("ES version: %s" % version)
+
+        print("Server: ES Open Distro: %s" % version)
+        print("Version:", __version__)
+        print("Home: https://opendistro.github.io/for-elasticsearch-docs/")
+
         return es
 
     else:

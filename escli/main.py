@@ -21,8 +21,11 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from pygments.lexers.sql import SqlLexer
 from .connection import get_connection, query
 from cli_helpers.tabular_output import TabularOutputFormatter
+from cli_helpers.tabular_output.preprocessors import align_decimals, format_numbers
 from .esbuffer import pg_is_multiline
+from .pgstyle import style_factory, style_factory_output
 
+from .encodingutils import text_type
 
 class ESCli:
 
@@ -78,17 +81,24 @@ class ESCli:
 
     sql_completer = WordCompleter(keywords + functions, ignore_case=True)
 
-    style = Style.from_dict({
+    cli_style = {
         'completion-menu.completion': 'bg:#008888 #ffffff',
         'completion-menu.completion.current': 'bg:#00aaaa #000000',
-        'scrollbar.background': 'bg:#88aaaa',
-        'scrollbar.button': 'bg:#222222',
-    })
+        # 'scrollbar.background': 'bg:#88aaaa',
+        # 'scrollbar.button': 'bg:#222222',
+        'scrollbar.arrow' : 'bg:#003333',
+        'scrollbar': 'bg:#00aaaa',
+        'output.header': "#00ff5f bold",
+        'output.odd-row': "",
+        'output.even-row': ""
+    }
 
     def __init__(self):
         self.prompt_app = None
         self.connection = None
         self.setting = None
+        self.syntax_style = 'default'
+        self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
 
     def _build_cli(self):
@@ -96,6 +106,8 @@ class ESCli:
         self.multiline_continuation_char = '.'
         self.multi_line = True
         self.multiline_mode = 'escli'
+
+
 
         def get_continuation(width, line_number, is_soft_wrap):
             continuation = self.multiline_continuation_char * (width - 1) + " "
@@ -107,9 +119,10 @@ class ESCli:
             complete_while_typing=True,
             # completer=DynamicCompleter(lambda: self.completer),
             # history=history,
+            style=style_factory(self.syntax_style, self.cli_style),
             prompt_continuation=get_continuation,
             multiline=pg_is_multiline(self),
-            style=self.style,
+            # style=self.style,
             auto_suggest=AutoSuggestFromHistory(),
             input_processors=[ConditionalProcessor(
                 processor=HighlightMatchingBracketProcessor(
@@ -126,7 +139,8 @@ class ESCli:
         self.connection = get_connection(endpoint)
         self.prompt_app = self._build_cli()
         self.setting = {
-            "max_width": self.prompt_app.output.get_size().columns
+            "max_width": self.prompt_app.output.get_size().columns,
+            "style_output": self.style_output,
         }
 
         while True:
@@ -175,6 +189,36 @@ def format_output(data, settings):
     datarows = data['datarows']
     schema = data['schema']
 
+    def format_array(val):
+        if val is None:
+            return settings.missingval
+        if not isinstance(val, list):
+            return val
+        return "{" + ",".join(text_type(format_array(e)) for e in val) + "}"
+
+    def format_arrays(data, headers, **_):
+        data = list(data)
+        for row in data:
+            row[:] = [
+                format_array(val) if isinstance(val, list) else val for val in row
+            ]
+
+        return data, headers
+
+    output_kwargs = {
+        "sep_title": "RECORD {n}",
+        "sep_character": "-",
+        "sep_length": (1, 25),
+        # todo think about using config at the end
+        # "missing_value": settings.missingval,
+        # "integer_format": settings.dcmlfmt,
+        # "float_format": settings.floatfmt,
+        "preprocessors": (format_numbers, format_arrays),
+        "disable_numparse": True,
+        "preserve_whitespace": True,
+        "style": settings["style_output"],
+    }
+
     fields = []
     types = []
 
@@ -183,14 +227,17 @@ def format_output(data, settings):
         fields.append(i['name'])
         types.append(i['type'])
 
-    output = formatter.format_output(datarows, fields)
+    output = formatter.format_output(datarows, fields, **output_kwargs)
     first_line = next(output)
 
     # check width overflow, change format_name for better visual effect
     if len(first_line) > max_width:
-        output = formatter.format_output(datarows, fields, format_name='vertical')
+        click.secho("The result set has field length more than %s" % max_width, fg="red")
+        if click.confirm("Do you want to convert to vertical?"):
+            output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
 
     return output
+
 
 if __name__ == "__main__":
     cli()

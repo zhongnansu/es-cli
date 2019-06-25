@@ -2,8 +2,7 @@ from __future__ import unicode_literals
 from .__init__ import __version__
 import click
 import sys
-
-
+import re
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
@@ -20,7 +19,13 @@ from prompt_toolkit.layout.processors import (
     TabsProcessor,
 )
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-
+from .config import (
+    get_casing_file,
+    load_config,
+    config_location,
+    ensure_dir_exists,
+    get_config,
+)
 
 from pygments.lexers.sql import SqlLexer
 from .connection import get_connection, execute_query
@@ -28,8 +33,11 @@ from cli_helpers.tabular_output import TabularOutputFormatter
 from cli_helpers.tabular_output.preprocessors import align_decimals, format_numbers
 from .esbuffer import pg_is_multiline
 from .pgstyle import style_factory, style_factory_output
-
 from .encodingutils import text_type
+
+# Ref: https://stackoverflow.com/questions/30425105/filter-special-chars-such-as-color-codes-from-shell-output
+COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
+
 
 class ESCli:
 
@@ -85,23 +93,20 @@ class ESCli:
 
     sql_completer = WordCompleter(keywords + functions, ignore_case=True)
 
-    cli_style = {
-        'completion-menu.completion': 'bg:#008888 #ffffff',
-        'completion-menu.completion.current': 'bg:#00aaaa #000000',
-        # 'scrollbar.background': 'bg:#88aaaa',
-        # 'scrollbar.button': 'bg:#222222',
-        'scrollbar.arrow' : 'bg:#003333',
-        'scrollbar': 'bg:#00aaaa',
-        'output.header': "#00ff5f bold",
-        'output.odd-row': "",
-        'output.even-row': ""
-    }
+    def __init__(self,
+                 esclirc_file=None):
 
-    def __init__(self):
+        # Load config.
+        c = self.config = get_config(esclirc_file)
+
         self.prompt_app = None
         self.connection = None
         self.setting = None
-        self.syntax_style = 'default'
+
+        self.syntax_style = c["main"]["syntax_style"]
+        self.cli_style = c["colors"]
+
+        # self.syntax_style = 'default'
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
 
@@ -110,8 +115,6 @@ class ESCli:
         self.multiline_continuation_char = '.'
         self.multi_line = True
         self.multiline_mode = 'escli'
-
-
 
         def get_continuation(width, line_number, is_soft_wrap):
             continuation = self.multiline_continuation_char * (width - 1) + " "
@@ -146,7 +149,7 @@ class ESCli:
             "max_width": self.prompt_app.output.get_size().columns,
             "style_output": self.style_output,
         }
-
+        # print info data
         print("Server: ES Open Distro: %s" % es_version)
         print("Version:", __version__)
         print("Home: https://opendistro.github.io/for-elasticsearch-docs/")
@@ -159,18 +162,46 @@ class ESCli:
                     continue  # Control-C pressed. Try again.
                 except EOFError:
                     break  # Control-D pressed.
-
-
-            # TODO: handle case that connection lost during the cli is sill running. _handle_server_closed_connection(text)
+            # TODO: handle case that connection lost during the cli is sill running.
+            #  _handle_server_closed_connection(text)
                 try:
                     data = execute_query(self.connection, text)
                     output = format_output(data, self.setting)
 
-                    click.echo('\n'.join(output))
+                    self.echo_via_pager('\n'.join(output))
                 except Exception as e:
                     print(repr(e))
 
         print('GoodElasticBye!')
+
+    def is_too_wide(self, line):
+        """Will this line be too wide to fit into terminal?"""
+        if not self.prompt_app:
+            return False
+        return (
+            len(COLOR_CODE_REGEX.sub("", line))
+            > self.prompt_app.output.get_size().columns
+        )
+
+    def is_too_tall(self, lines):
+        """Are there too many lines to fit into terminal?"""
+        if not self.prompt_app:
+            return False
+        return len(lines) >= (self.prompt_app.output.get_size().rows - 4)
+
+    def echo_via_pager(self, text, color=None):
+        lines = text.split("\n")
+
+        if self.is_too_tall(lines) or any(self.is_too_wide(l) for l in lines):
+            click.echo_via_pager(text, color=color)
+        else:
+            click.echo(text, color=color)
+
+
+
+
+
+
 
 
 @click.command()
@@ -189,7 +220,14 @@ class ESCli:
     is_flag=True,
     help="run single query without getting in to the console",
 )
-def cli(endpoint, query, explain):
+@click.option(
+    "--esclirc",
+    default=config_location() + "config",
+    envvar="ESCLIRC",
+    help="Location of esclirc file.",
+    type=click.Path(dir_okay=False),
+)
+def cli(endpoint, query, explain, esclirc):
     """Provide endpoint for elasticsearch connection"""
 
     # TODO: echo or print more info of server and cli here
@@ -205,8 +243,7 @@ def cli(endpoint, query, explain):
         click.echo(res)
         sys.exit(0)
 
-
-    escli = ESCli()
+    escli = ESCli(esclirc_file=esclirc)
 
     escli.run_cli(endpoint)
 

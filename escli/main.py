@@ -72,21 +72,22 @@ class ESCli:
                  'MIN', 'NOW', 'ROUND', 'SUM', 'TOP', 'UCASE', 'UNIX_TIMESTAMP']
 
     sql_completer = WordCompleter(keywords + functions, ignore_case=True)
+    # TODO: Add index suggestion by using getIndex api
 
     def __init__(self,
                  esclirc_file=None):
 
         # Load config.
-        c = self.config = get_config(esclirc_file)
+        config = self.config = get_config(esclirc_file)
 
         self.prompt_app = None
         self.connection = None
         self.setting = None
 
-        self.syntax_style = c["main"]["syntax_style"]
-        self.cli_style = c["colors"]
+        self.syntax_style = config["main"]["syntax_style"]
+        self.cli_style = config["colors"]
+        self.table_format = config["main"]["table_format"]
 
-        # self.syntax_style = 'default'
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
 
@@ -128,6 +129,7 @@ class ESCli:
         self.setting = {
             "max_width": self.prompt_app.output.get_size().columns,
             "style_output": self.style_output,
+            "table_format": self.table_format,
         }
         # print Banner
         banner = pyfiglet.figlet_format("ES SQL", font="slant")
@@ -186,12 +188,6 @@ class ESCli:
             click.echo(text, color=color)
 
 
-
-
-
-
-
-
 @click.command()
 @click.argument('endpoint', default="http://localhost:9200")
 @click.option(
@@ -199,14 +195,14 @@ class ESCli:
     "--query",
     "query",
     type=click.STRING,
-    help="run single query without getting in to the console",
+    help="Run single query without getting in to the console",
 )
 @click.option(
     "-e",
     "--explain",
     "explain",
     is_flag=True,
-    help="explain sql to DSL",
+    help="Explain sql to DSL",
 )
 @click.option(
     "--esclirc",
@@ -215,7 +211,23 @@ class ESCli:
     help="Location of esclirc file.",
     type=click.Path(dir_okay=False),
 )
-def cli(endpoint, query, explain, esclirc):
+@click.option(
+    "-f",
+    "--format",
+    "format",
+    type=click.STRING,
+    default="jdbc",
+    help="Specify format of output, jdbc/raw/csv. By default, it's jdbc.",
+)
+@click.option(
+    "-v",
+    "--vertical",
+    "is_vertical",
+    is_flag=True,
+    default=False,
+    help="Convert output from horizontal to vertical",
+)
+def cli(endpoint, query, explain, esclirc, format, is_vertical):
     """
     Provide endpoint for elasticsearch connection.
     By Default, it uses http://localhost:9200 to connect
@@ -223,13 +235,17 @@ def cli(endpoint, query, explain, esclirc):
 
     # TODO: echo or print more info of server and cli here
 
-    # handle single query without more interaction with user
+    # handle single query without interaction with user
     if query:
         es, es_version = get_connection(endpoint)
         if explain:
             res = execute_query(es, query, explain=True)
         else:
-            res = execute_query(es, query, 'csv')
+            res = execute_query(es, query, output_format=format)
+            if res and format == 'jdbc':
+                res = format_output(res, settings={'table_format': 'psql',
+                                                   'format_name': 'vertical' if is_vertical else None})
+                res = '\n'.join(res)
 
         click.echo(res)
         sys.exit(0)
@@ -241,9 +257,9 @@ def cli(endpoint, query, explain, esclirc):
 
 def format_output(data, settings):
 
-    formatter = TabularOutputFormatter(format_name='psql')
+    formatter = TabularOutputFormatter(format_name=settings['table_format'])
 
-    max_width = settings['max_width']
+    max_width = settings.get('max_width', sys.maxsize)
 
     datarows = data['datarows']
     schema = data['schema']
@@ -269,13 +285,14 @@ def format_output(data, settings):
         "sep_character": "-",
         "sep_length": (1, 25),
         # todo think about using config at the end
+        # todo encapsulate to a OutputSetting object, refer to pgcli source code
         # "missing_value": settings.missingval,
         # "integer_format": settings.dcmlfmt,
         # "float_format": settings.floatfmt,
         "preprocessors": (format_numbers, format_arrays),
         "disable_numparse": True,
         "preserve_whitespace": True,
-        "style": settings["style_output"],
+        "style": settings.get('style_output', None)
     }
 
     fields = []
@@ -286,10 +303,13 @@ def format_output(data, settings):
         fields.append(i['name'])
         types.append(i['type'])
 
-    output = formatter.format_output(datarows, fields, **output_kwargs)
-    first_line = next(output)
+    format_name = settings.get('format_name', None)
+    output = formatter.format_output(datarows, fields, format_name=format_name, **output_kwargs)
+
 
     # check width overflow, change format_name for better visual effect
+    first_line = next(output)
+
     if len(first_line) > max_width:
         click.secho("Output longer than terminal width", fg="red")
         if click.confirm("Do you want to convert to vertical for better visual effect?"):

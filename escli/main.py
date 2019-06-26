@@ -4,6 +4,8 @@ import click
 import sys
 import re
 
+import pyfiglet
+
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.styles import Style
@@ -69,28 +71,6 @@ class ESCli:
                  'FROM_UNIXTIME', 'LAST', 'LCASE', 'LEN', 'MAX', 'MID',
                  'MIN', 'NOW', 'ROUND', 'SUM', 'TOP', 'UCASE', 'UNIX_TIMESTAMP']
 
-    # old lowercase keywords
-    # keywords = [
-    #     'abort', 'action', 'add', 'after', 'all', 'alter', 'analyze', 'and',
-    #     'as', 'asc', 'attach', 'autoincrement', 'before', 'begin', 'between',
-    #     'by', 'cascade', 'case', 'cast', 'check', 'collate', 'column',
-    #     'commit', 'conflict', 'constraint', 'create', 'cross', 'current_date',
-    #     'current_time', 'current_timestamp', 'database', 'default',
-    #     'deferrable', 'deferred', 'delete', 'desc', 'detach', 'distinct',
-    #     'drop', 'each', 'else', 'end', 'escape', 'except', 'exclusive',
-    #     'exists', 'explain', 'fail', 'for', 'foreign', 'from', 'full', 'glob',
-    #     'group', 'having', 'if', 'ignore', 'immediate', 'in', 'index',
-    #     'indexed', 'initially', 'inner', 'insert', 'instead', 'intersect',
-    #     'into', 'is', 'isnull', 'join', 'key', 'left', 'like', 'limit',
-    #     'match', 'natural', 'no', 'not', 'notnull', 'null', 'of', 'offset',
-    #     'on', 'or', 'order', 'outer', 'plan', 'pragma', 'primary', 'query',
-    #     'raise', 'recursive', 'references', 'regexp', 'reindex', 'release',
-    #     'rename', 'replace', 'restrict', 'right', 'rollback', 'row',
-    #     'savepoint', 'SELECT', 'set', 'table', 'temp', 'temporary', 'then',
-    #     'to', 'transaction', 'trigger', 'union', 'unique', 'update', 'using',
-    #     'vacuum', 'values', 'view', 'virtual', 'when', 'where', 'with',
-    #     'without']
-
     sql_completer = WordCompleter(keywords + functions, ignore_case=True)
 
     def __init__(self,
@@ -149,8 +129,12 @@ class ESCli:
             "max_width": self.prompt_app.output.get_size().columns,
             "style_output": self.style_output,
         }
+        # print Banner
+        banner = pyfiglet.figlet_format("ES SQL", font="slant")
+        print(banner)
+
         # print info data
-        print("Server: ES Open Distro: %s" % es_version)
+        print("Server: Open Distro for ES: %s" % es_version)
         print("Version:", __version__)
         print("Home: https://opendistro.github.io/for-elasticsearch-docs/")
 
@@ -166,9 +150,13 @@ class ESCli:
             #  _handle_server_closed_connection(text)
                 try:
                     data = execute_query(self.connection, text)
-                    output = format_output(data, self.setting)
 
-                    self.echo_via_pager('\n'.join(output))
+                    if data:
+
+                        output = format_output(data, self.setting)
+                        self.echo_via_pager('\n'.join(output))
+                    else:
+                        continue
                 except Exception as e:
                     print(repr(e))
 
@@ -218,7 +206,7 @@ class ESCli:
     "--explain",
     "explain",
     is_flag=True,
-    help="run single query without getting in to the console",
+    help="explain sql to DSL",
 )
 @click.option(
     "--esclirc",
@@ -228,7 +216,10 @@ class ESCli:
     type=click.Path(dir_okay=False),
 )
 def cli(endpoint, query, explain, esclirc):
-    """Provide endpoint for elasticsearch connection"""
+    """
+    Provide endpoint for elasticsearch connection.
+    By Default, it uses http://localhost:9200 to connect
+    """
 
     # TODO: echo or print more info of server and cli here
 
@@ -238,7 +229,7 @@ def cli(endpoint, query, explain, esclirc):
         if explain:
             res = execute_query(es, query, explain=True)
         else:
-            res = execute_query(es, query, 'raw')
+            res = execute_query(es, query, 'csv')
 
         click.echo(res)
         sys.exit(0)
@@ -300,8 +291,8 @@ def format_output(data, settings):
 
     # check width overflow, change format_name for better visual effect
     if len(first_line) > max_width:
-        click.secho("The result set has field length more than %s" % max_width, fg="red")
-        if click.confirm("Do you want to convert to vertical?"):
+        click.secho("Output longer than terminal width", fg="red")
+        if click.confirm("Do you want to convert to vertical for better visual effect?"):
             output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
 
     return output

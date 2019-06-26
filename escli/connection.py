@@ -31,18 +31,27 @@ def execute_query(es, query, output_format='jdbc', explain=False):
     # deal with input
     final_query = query.strip().strip(';')
 
-    data = es.transport.perform_request(url="/_opendistro/_sql/", method="POST", params={'format': output_format},
-                                        body={
-                                            'query': final_query
-                                        })
+    if explain:
+        try:
+            data = es.transport.perform_request(url="/_opendistro/_sql/_explain", method="POST", body={
+                'query': final_query
+            })
+            return data
+        except Exception as e:
+            click.echo(e)
+
+    else:
+        try:
+            data = es.transport.perform_request(url="/_opendistro/_sql/", method="POST", params={'format': output_format},
+                                                body={
+                                                    'query': final_query
+                                                })
+            return data
+        except Exception as e:
+            click.echo(e)
 
     # todo this is not flexible at all, change to use setting to config params, use only one perform_request at the end
-    if explain:
-        data = es.transport.perform_request(url="/_opendistro/_sql/_explain", method="POST", body={
-            'query': final_query
-        })
 
-    return data
 
 # endpoint = "http://localhost:9200"
 # s = "select * from es_1,es_2"

@@ -53,9 +53,3 @@ def execute_query(es, query, output_format='jdbc', explain=False):
     # todo this is not flexible at all, change to use setting to config params, use only one perform_request at the end
 
 
-# endpoint = "http://localhost:9200"
-# s = "select * from es_1,es_2"
-# es = get_connection(endpoint)
-# data, header = query(es, s)
-#
-# format_output(data, header)

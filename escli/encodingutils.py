@@ -6,6 +6,8 @@ PY3 = sys.version_info[0] == 3
 text_type = unicode if PY2 else str
 
 
+# TODO find out usage of these functions in pgcli source code, get rid of those if it is not needed
+
 def unicode2utf8(arg):
     """
     Only in Python 2. Psycopg2 expects the args as bytes not unicode.

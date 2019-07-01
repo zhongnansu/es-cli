@@ -54,12 +54,12 @@ def get_config(esclirc_file=None):
 
     package_root = os.path.dirname(package_root)
 
-    pgclirc_file = esclirc_file or "%sconfig" % config_location()
+    esclirc_file = esclirc_file or "%sconfig" % config_location()
 
     default_config = os.path.join(package_root, "esclirc")
-    write_default_config(default_config, pgclirc_file)
+    write_default_config(default_config, esclirc_file)
 
-    return load_config(pgclirc_file, default_config)
+    return load_config(esclirc_file, default_config)
 
 
 def get_casing_file(config):

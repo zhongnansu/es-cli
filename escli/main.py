@@ -6,10 +6,7 @@ import re
 
 import pyfiglet
 
-from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.styles import Style
-from prompt_toolkit.completion import DynamicCompleter, ThreadedCompleter
 from prompt_toolkit.enums import DEFAULT_BUFFER, EditingMode
 from prompt_toolkit.shortcuts import PromptSession, CompleteStyle
 from prompt_toolkit.document import Document
@@ -42,7 +39,6 @@ COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
 
 
 class ESCli:
-
     keywords = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
                 'ASC', 'AUTO_INCREMENT', 'BEFORE', 'BEGIN', 'BETWEEN',
                 'BIGINT', 'BINARY', 'BY', 'CASE', 'CHANGE MASTER TO', 'CHAR',
@@ -72,6 +68,7 @@ class ESCli:
                  'MIN', 'NOW', 'ROUND', 'SUM', 'TOP', 'UCASE', 'UNIX_TIMESTAMP']
 
     sql_completer = WordCompleter(keywords + functions, ignore_case=True)
+
     # TODO: Add index suggestion by using getIndex api
 
     def __init__(self,
@@ -89,7 +86,6 @@ class ESCli:
         self.table_format = config["main"]["table_format"]
 
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
-
 
     def _build_cli(self):
 
@@ -110,7 +106,6 @@ class ESCli:
             style=style_factory(self.syntax_style, self.cli_style),
             prompt_continuation=get_continuation,
             multiline=pg_is_multiline(self),
-            # style=self.style,
             auto_suggest=AutoSuggestFromHistory(),
             input_processors=[ConditionalProcessor(
                 processor=HighlightMatchingBracketProcessor(
@@ -148,8 +143,8 @@ class ESCli:
                     continue  # Control-C pressed. Try again.
                 except EOFError:
                     break  # Control-D pressed.
-            # TODO: handle case that connection lost during the cli is sill running.
-            #  _handle_server_closed_connection(text)
+                # TODO: handle case that connection lost during the cli is sill running.
+                #  _handle_server_closed_connection(text)
                 try:
                     data = execute_query(self.connection, text)
 
@@ -169,8 +164,8 @@ class ESCli:
         if not self.prompt_app:
             return False
         return (
-            len(COLOR_CODE_REGEX.sub("", line))
-            > self.prompt_app.output.get_size().columns
+                len(COLOR_CODE_REGEX.sub("", line))
+                > self.prompt_app.output.get_size().columns
         )
 
     def is_too_tall(self, lines):
@@ -227,7 +222,14 @@ class ESCli:
     default=False,
     help="Convert output from horizontal to vertical",
 )
-def cli(endpoint, query, explain, esclirc, format, is_vertical):
+def cli(
+        endpoint,
+        query,
+        explain,
+        esclirc,
+        result_format,
+        is_vertical
+):
     """
     Provide endpoint for elasticsearch connection.
     By Default, it uses http://localhost:9200 to connect
@@ -241,8 +243,8 @@ def cli(endpoint, query, explain, esclirc, format, is_vertical):
         if explain:
             res = execute_query(es, query, explain=True)
         else:
-            res = execute_query(es, query, output_format=format)
-            if res and format == 'jdbc':
+            res = execute_query(es, query, output_format=result_format)
+            if res and result_format == 'jdbc':
                 res = format_output(res, settings={'table_format': 'psql',
                                                    'format_name': 'vertical' if is_vertical else None})
                 res = '\n'.join(res)
@@ -256,13 +258,13 @@ def cli(endpoint, query, explain, esclirc, format, is_vertical):
 
 
 def format_output(data, settings):
-
     formatter = TabularOutputFormatter(format_name=settings['table_format'])
 
     max_width = settings.get('max_width', sys.maxsize)
-
     datarows = data['datarows']
     schema = data['schema']
+    fields = []
+    types = []
 
     def format_array(val):
         if val is None:
@@ -271,14 +273,14 @@ def format_output(data, settings):
             return val
         return "{" + ",".join(text_type(format_array(e)) for e in val) + "}"
 
-    def format_arrays(data, headers, **_):
-        data = list(data)
-        for row in data:
+    def format_arrays(field_data, headers, **_):
+        field_data = list(field_data)
+        for row in field_data:
             row[:] = [
                 format_array(val) if isinstance(val, list) else val for val in row
             ]
 
-        return data, headers
+        return field_data, headers
 
     output_kwargs = {
         "sep_title": "RECORD {n}",
@@ -295,9 +297,6 @@ def format_output(data, settings):
         "style": settings.get('style_output', None)
     }
 
-    fields = []
-    types = []
-
     # get header and type as list
     for i in schema:
         fields.append(i['name'])
@@ -306,14 +305,16 @@ def format_output(data, settings):
     format_name = settings.get('format_name', None)
     output = formatter.format_output(datarows, fields, format_name=format_name, **output_kwargs)
 
-
     # check width overflow, change format_name for better visual effect
     first_line = next(output)
 
     if len(first_line) > max_width:
         click.secho("Output longer than terminal width", fg="red")
-        if click.confirm("Do you want to convert to vertical for better visual effect?"):
+        if click.confirm("Do you want to display data vertically for better visual effect?"):
             output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
+
+
+    # TODO: Add row limit. Refer to pgcli -> main -> line 866
 
     return output
 

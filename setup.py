@@ -3,6 +3,7 @@ import re
 import ast
 import platform
 
+# TODO: Update dependency list
 install_requirements = [
     "click >= 4.1",
     "prompt_toolkit >= 2.0.6",

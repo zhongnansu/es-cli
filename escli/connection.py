@@ -9,7 +9,6 @@ import urllib3
 import logging
 
 
-# TODO: use host + port instead of endpoint
 def get_connection(endpoint, http_auth=None):
 
     urllib3.disable_warnings()

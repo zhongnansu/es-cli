@@ -3,7 +3,7 @@ from .__init__ import __version__
 import click
 import sys
 import re
-
+import itertools
 import pyfiglet
 
 from prompt_toolkit.completion import WordCompleter
@@ -24,8 +24,10 @@ from .config import (
     config_location,
     ensure_dir_exists,
     get_config,
+
 )
 
+from collections import namedtuple
 from pygments.lexers.sql import SqlLexer
 from .connection import get_connection, execute_query
 from cli_helpers.tabular_output import TabularOutputFormatter
@@ -37,6 +39,18 @@ from .encodingutils import text_type
 # Ref: https://stackoverflow.com/questions/30425105/filter-special-chars-such-as-color-codes-from-shell-output
 COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
 
+
+OutputSettings = namedtuple(
+    "OutputSettings",
+    "table_format is_vertical max_width style_output missingval",
+)
+OutputSettings.__new__.__defaults__ = (
+    None,
+    False,
+    sys.maxsize,
+    None,
+    "<null>",
+)
 
 class ESCli:
     keywords = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
@@ -79,7 +93,6 @@ class ESCli:
 
         self.prompt_app = None
         self.connection = None
-        self.setting = None
 
         self.syntax_style = config["main"]["syntax_style"]
         self.cli_style = config["colors"]
@@ -121,11 +134,20 @@ class ESCli:
 
         self.connection, es_version = get_connection(endpoint, http_auth)
         self.prompt_app = self._build_cli()
-        self.setting = {
-            "max_width": self.prompt_app.output.get_size().columns,
-            "style_output": self.style_output,
-            "table_format": self.table_format,
-        }
+
+        settings = OutputSettings(
+            max_width=self.prompt_app.output.get_size().columns,
+            style_output=self.style_output,
+            table_format=self.table_format,
+        )
+
+        # settings = {
+        #     "max_width": self.prompt_app.output.get_size().columns,
+        #     "style_output": self.style_output,
+        #     "table_format": self.table_format,
+        # }
+
+
         # print Banner
         banner = pyfiglet.figlet_format("ES SQL", font="slant")
         print(banner)
@@ -150,7 +172,7 @@ class ESCli:
 
                     if data:
 
-                        output = format_output(data, self.setting)
+                        output = format_output(data, settings)
                         self.echo_via_pager('\n'.join(output))
                     else:
                         continue
@@ -260,8 +282,8 @@ def cli(
         else:
             res = execute_query(es, query, output_format=result_format)
             if res and result_format == 'jdbc':
-                res = format_output(res, settings={'table_format': 'psql',
-                                                   'format_name': 'vertical' if is_vertical else None})
+                settings = OutputSettings(table_format='psql', is_vertical=is_vertical)
+                res = format_output(res, settings)
                 res = '\n'.join(res)
 
         click.echo(res)
@@ -273,9 +295,13 @@ def cli(
 
 
 def format_output(data, settings):
-    formatter = TabularOutputFormatter(format_name=settings['table_format'])
 
-    max_width = settings.get('max_width', sys.maxsize)
+    table_format = "vertical" if settings.is_vertical else settings.table_format
+
+    formatter = TabularOutputFormatter(format_name=table_format)
+
+    max_width = settings.max_width
+
     datarows = data['datarows']
     schema = data['schema']
     fields = []
@@ -303,13 +329,10 @@ def format_output(data, settings):
         "sep_length": (1, 25),
         # todo think about using config at the end
         # todo encapsulate to a OutputSetting object, refer to pgcli source code
-        # "missing_value": settings.missingval,
-        # "integer_format": settings.dcmlfmt,
-        # "float_format": settings.floatfmt,
         "preprocessors": (format_numbers, format_arrays),
         "disable_numparse": True,
         "preserve_whitespace": True,
-        "style": settings.get('style_output', None)
+        "style": settings.style_output
     }
 
     # get header and type as list
@@ -317,17 +340,16 @@ def format_output(data, settings):
         fields.append(i['name'])
         types.append(i['type'])
 
-    format_name = settings.get('format_name', None)
-    output = formatter.format_output(datarows, fields, format_name=format_name, **output_kwargs)
+    output = formatter.format_output(datarows, fields, **output_kwargs)
 
     # check width overflow, change format_name for better visual effect
     first_line = next(output)
+    output = itertools.chain([first_line], output)
 
     if len(first_line) > max_width:
         click.secho("Output longer than terminal width", fg="red")
         if click.confirm("Do you want to display data vertically for better visual effect?"):
             output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
-
 
     # TODO: Add row limit. Refer to pgcli -> main -> line 866
 

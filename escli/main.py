@@ -117,9 +117,9 @@ class ESCli:
 
         return prompt_app
 
-    def run_cli(self, endpoint):
+    def run_cli(self, endpoint, http_auth=None):
 
-        self.connection, es_version = get_connection(endpoint)
+        self.connection, es_version = get_connection(endpoint, http_auth)
         self.prompt_app = self._build_cli()
         self.setting = {
             "max_width": self.prompt_app.output.get_size().columns,
@@ -209,7 +209,7 @@ class ESCli:
 @click.option(
     "-f",
     "--format",
-    "format",
+    "result_format",
     type=click.STRING,
     default="jdbc",
     help="Specify format of output, jdbc/raw/csv. By default, it's jdbc.",
@@ -222,24 +222,39 @@ class ESCli:
     default=False,
     help="Convert output from horizontal to vertical",
 )
+@click.option(
+    "-U",
+    "--username",
+    help="Username to connect to the Elasticsearch",
+)
+@click.option(
+    "-W",
+    "--password",
+    help="password of the username",
+)
 def cli(
         endpoint,
         query,
         explain,
         esclirc,
         result_format,
-        is_vertical
+        is_vertical,
+        username,
+        password,
 ):
     """
     Provide endpoint for elasticsearch connection.
     By Default, it uses http://localhost:9200 to connect
     """
 
-    # TODO: echo or print more info of server and cli here
+    if username and password:
+        http_auth = (username, password)
+    else:
+        http_auth = None
 
     # handle single query without interaction with user
     if query:
-        es, es_version = get_connection(endpoint)
+        es, es_version = get_connection(endpoint, http_auth)
         if explain:
             res = execute_query(es, query, explain=True)
         else:
@@ -254,7 +269,7 @@ def cli(
 
     escli = ESCli(esclirc_file=esclirc)
 
-    escli.run_cli(endpoint)
+    escli.run_cli(endpoint, http_auth)
 
 
 def format_output(data, settings):

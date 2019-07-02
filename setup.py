@@ -19,19 +19,12 @@ with open("escli/__init__.py", "rb") as f:
         ast.literal_eval(_version_re.search(f.read().decode("utf-8")).group(1))
     )
 
-# setproctitle is used to mask the password when running `ps` in command line.
-# But this is not necessary in Windows since the password is never shown in the
-# task manager. Also setproctitle is a hard dependency to install in Windows,
-# so we'll only install it if we're not in Windows.
-if platform.system() != "Windows" and not platform.system().startswith("CYGWIN"):
-    install_requirements.append("setproctitle >= 1.1.9")
-
 description = "CLI for Elasticsearch Open Distro SQL. With auto-completion and syntax highlighting."
 
 setup(
     name="escli",
     author="AES",
-    # author_email="",
+    author_email="zhongnan.su@outlook.com",
     version=version,
     license="BSD",
     # url="http://pgcli.com",

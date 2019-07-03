@@ -12,7 +12,7 @@ def delete_index(client, index_name):
     client.indices.delete(index=index_name)
 
 
-def load_data(es, index_name, filename='tt.json'):
+def load_data(es, index_name, filename='accounts.json'):
 
     filepath = './test_data/' + filename
 
@@ -33,6 +33,6 @@ def get_connection():
     return client
 
 
-# es = get_connection()
-# create_index(es, 'wtf')
-# load_data(es, 'wtf')
+es = get_connection()
+create_index(es, 'bank')
+load_data(es, 'bank')

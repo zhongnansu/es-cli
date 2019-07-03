@@ -86,6 +86,7 @@ def execute_query(es, query, output_format='jdbc', explain=False):
                                                 body={
                                                     'query': final_query
                                                 })
+
             return data
         except Exception as e:
             click.echo(e)

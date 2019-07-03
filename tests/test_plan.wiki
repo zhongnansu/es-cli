@@ -1,0 +1,37 @@
+ = General Checks =
+
+
+
+
+
+    == TO BE ARRANGED
+    * [ ] Test pagination with different output length / width
+    * [ ] Test table formatted output
+
+
+
+
+
+    == Connection ==
+    * [ ] Check connecting to a local database.
+    * [ ] Check connecting to a remote database.
+    * [ ] Check connecting to a database with a user/password.
+    * [ ] Check connecting to a non-existent database.
+
+
+    == PGExecute ==
+    * [ ] Test successful execution given a cursor.
+    * [ ] Test unsuccessful execution with a syntax error.
+
+    == Naive Autocompletion ==
+    * [ ] Input empty string, ask for completions - Everything.
+    * [ ] Input partial prefix, ask for completions - Stars with prefix.
+    * [ ] Input fully autocompleted string, ask for completions - Only full match
+    * [ ] Input non-existent prefix, ask for completions - nothing
+    * [ ] Input lowercase prefix - case insensitive completions
+
+    == Smart Autocompletion ==
+    * [ ] Input empty string and check if only keywords are returned.
+    * [ ] Input SELECT prefix and check if only columns and '*' are returned.
+    * [ ] Input SELECT blah - only keywords are returned.
+    * [ ] Input SELECT * FROM - Table names only

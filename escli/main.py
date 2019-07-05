@@ -39,6 +39,7 @@ from .encodingutils import text_type
 # Ref: https://stackoverflow.com/questions/30425105/filter-special-chars-such-as-color-codes-from-shell-output
 COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
 
+click.disable_unicode_literals_warning = True
 
 OutputSettings = namedtuple(
     "OutputSettings",
@@ -51,6 +52,7 @@ OutputSettings.__new__.__defaults__ = (
     None,
     "<null>",
 )
+
 
 class ESCli:
     keywords = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
@@ -149,18 +151,18 @@ class ESCli:
 
 
         # print Banner
-        banner = pyfiglet.figlet_format("ES SQL", font="slant")
+        banner = pyfiglet.figlet_format("Open Distro", font="slant")
         print(banner)
 
         # print info data
         print("Server: Open Distro for ES: %s" % es_version)
         print("Version:", __version__)
-        print("Home: https://opendistro.github.io/for-elasticsearch-docs/")
+        print("Endpoint: %s" % endpoint)
 
         while True:
             if self.connection:
                 try:
-                    text = self.prompt_app.prompt(message='escli@' + endpoint + '> ')
+                    text = self.prompt_app.prompt(message='escli' + '> ')
                 except KeyboardInterrupt:
                     continue  # Control-C pressed. Try again.
                 except EOFError:
@@ -312,7 +314,7 @@ def format_output(data, settings):
             return settings.missingval
         if not isinstance(val, list):
             return val
-        return "{" + ",".join(text_type(format_array(e)) for e in val) + "}"
+        return "[" + ",".join(text_type(format_array(e)) for e in val) + "]"
 
     def format_arrays(field_data, headers, **_):
         field_data = list(field_data)
@@ -347,7 +349,7 @@ def format_output(data, settings):
     output = itertools.chain([first_line], output)
 
     if len(first_line) > max_width:
-        click.secho("Output longer than terminal width", fg="red")
+        click.secho(message="Output longer than terminal width", fg="red")
         if click.confirm("Do you want to display data vertically for better visual effect?"):
             output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
 

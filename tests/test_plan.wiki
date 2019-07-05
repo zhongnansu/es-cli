@@ -1,37 +1,43 @@
- = General Checks =
+ = Test Plan =
 
-
-
-
-
-    == TO BE ARRANGED
-    * [ ] Test pagination with different output length / width
-    * [ ] Test table formatted output
-
-
-
+    == Display ==
+    * [done] Test pagination with different output length / width.
+    * [done] Test table formatted output.
+    * [done] Test successful convert from horizontal to vertical with confirmation.
 
 
     == Connection ==
-    * [ ] Check connecting to a local database.
+    * [done] Check connecting to a local database.
     * [ ] Check connecting to a remote database.
-    * [ ] Check connecting to a database with a user/password.
+    * [ ] Check connecting to a Open Distro ES cluster with a user/password. how???
+    * [ ] Check connecting to a Open Distro ES cluster with a user/password. how???
     * [ ] Check connecting to a non-existent database.
+    * [ ] Check lost-connection scenario.
 
 
-    == PGExecute ==
-    * [ ] Test successful execution given a cursor.
+    == Execution ==
+    * [done] Test successful execution given a query.
     * [ ] Test unsuccessful execution with a syntax error.
+    * [ ] Test unsuccessful execution with a invalid request.
+    * [ ] Test load config.
+
+
+    == Nested commands ==
+    * [ ] Test write result to a file.
+    * [ ] Test command with combination of more params.
+
 
     == Naive Autocompletion ==
     * [ ] Input empty string, ask for completions - Everything.
     * [ ] Input partial prefix, ask for completions - Stars with prefix.
-    * [ ] Input fully autocompleted string, ask for completions - Only full match
-    * [ ] Input non-existent prefix, ask for completions - nothing
-    * [ ] Input lowercase prefix - case insensitive completions
+    * [ ] Input fully autocompleted string, ask for completions - Only full match.
+    * [ ] Input non-existent prefix, ask for completions - nothing.
+    * [ ] Input lowercase prefix - case insensitive completions.
+
 
     == Smart Autocompletion ==
-    * [ ] Input empty string and check if only keywords are returned.
-    * [ ] Input SELECT prefix and check if only columns and '*' are returned.
-    * [ ] Input SELECT blah - only keywords are returned.
-    * [ ] Input SELECT * FROM - Table names only
+    * [ ] Input SELECT * FROM - Table names only.
+
+
+    == Cross-Platform availability ==
+    * [ ] Manually test on Linux, Windows and mac-os.

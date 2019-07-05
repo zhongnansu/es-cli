@@ -11,6 +11,8 @@ install_requirements = [
     "cli_helpers[styles] >= 1.2.0",
     "elasticsearch==7.0.1",
     "pyfiglet==0.8.post1",
+    "boto3==1.9.181",
+    "requests-aws4auth==0.9"
 ]
 
 _version_re = re.compile(r"__version__\s+=\s+(.*)")

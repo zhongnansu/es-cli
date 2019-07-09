@@ -8,9 +8,8 @@
 
     == Connection ==
     * [done] Check connecting to a local database.
-    * [ ] Check connecting to a remote database.
-    * [ ] Check connecting to a Open Distro ES cluster with a user/password. how???
-    * [ ] Check connecting to a Open Distro ES cluster with a user/password. how???
+    * [ ] Check connecting to a Open Distro ES cluster with basic authentication. how???
+    * [ ] Check connecting to a Open Distro ES cluster with basic authentication. how???
     * [ ] Check connecting to a non-existent database.
     * [ ] Check lost-connection scenario.
 

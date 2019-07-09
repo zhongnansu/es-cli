@@ -1,5 +1,5 @@
 import pytest
-
+import mock
 from textwrap import dedent
 
 from tests.utils import (
@@ -14,7 +14,7 @@ from tests.utils import (
 
 
 @estest
-def test_query(connection):
+def test_conn_and_query(connection):
 
     doc = {
         'a': 'aws'
@@ -32,3 +32,18 @@ def test_query(connection):
     )
 
 
+@estest
+def test_nonexistent_index(connection):
+
+    doc = {
+        'a': 'aws'
+    }
+
+    load_data(connection, doc)
+    expected = {'reason': 'Invalid SQL query', 'details': 'no such index [non-existed]', 'type': 'IndexNotFoundException'}
+
+    with mock.patch('escli.connection.click.echo') as mock_echo:
+        run(connection, f'select * from non-existed')
+    mock_echo.assert_called_with(
+        expected
+    )

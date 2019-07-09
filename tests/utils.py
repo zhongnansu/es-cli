@@ -5,6 +5,7 @@ from escli.connection import execute_query
 from escli.main import OutputSettings, format_output
 
 TEST_INDEX_NAME = 'escli_test'
+HOST = 'http://localhost:9200'
 
 
 def create_index(client):
@@ -36,9 +37,8 @@ def load_data(es, doc):
 
 
 def get_connection():
-    endpoint = 'http://localhost:9200'
 
-    client = Elasticsearch([endpoint], verify_certs=True)
+    client = Elasticsearch([HOST], verify_certs=True)
 
     return client
 
@@ -60,15 +60,15 @@ estest = pytest.mark.skipif(
 def run(es, query):
 
     data = execute_query(es, query)
-    settings = OutputSettings(
-        table_format='psql'
-    )
+    if data:
+        settings = OutputSettings(
+            table_format='psql'
+        )
 
-    res = format_output(data, settings)
-    res = '\n'.join(res)
-    print(res)
+        res = format_output(data, settings)
+        res = '\n'.join(res)
 
-    return res
+        return res
 
 
 # es = get_connection()

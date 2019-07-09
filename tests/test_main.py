@@ -52,6 +52,54 @@ def test_format_output():
     assert list(results) == expected
 
 
+def test_format_output_vertical():
+    settings = OutputSettings(table_format="psql", max_width=1)
+    data = {
+        "schema": [
+            {
+                "name": "name",
+                "type": "text"
+            },
+            {
+                "name": "age",
+                "type": "long"
+            }
+        ],
+        "total": 2,
+        "datarows": [
+            [
+                "Tim",
+                24
+            ]
+        ],
+        "size": 1,
+        "status": 200
+    }
+
+    expanded = [
+        "-[ RECORD 1 ]-------------------------",
+        "name | Tim",
+        "age  | 24",
+    ]
+
+    with mock.patch("escli.main.click.secho") as mock_secho, mock.patch("escli.main.click.confirm") as mock_confirm:
+        expanded_results = format_output(
+            data, settings
+        )
+
+    mock_secho.assert_called_with(
+        message="Output longer than terminal width",
+        fg="red"
+    )
+    mock_confirm.assert_called_with(
+        "Do you want to display data vertically for better visual effect?"
+    )
+
+    assert "\n".join(expanded_results) == "\n".join(expanded)
+
+
+
+
 @pytest.fixture
 def pset_pager_mocks():
     cli = ESCli()

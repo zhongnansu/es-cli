@@ -77,7 +77,7 @@ def execute_query(es, query, output_format='jdbc', explain=False):
             })
             return data
         except Exception as e:
-            click.echo(e)
+            click.echo(e.info['error'])
 
     else:
         try:
@@ -86,9 +86,9 @@ def execute_query(es, query, output_format='jdbc', explain=False):
                                                 body={
                                                     'query': final_query
                                                 })
-
             return data
         except Exception as e:
-            click.echo(e)
+            click.echo(e.info['error'])
 
-    # todo this is not flexible at all, change to use setting to config params, use only one perform_request at the end
+
+        # TODO: this is not flexible at all, change to use setting to config params, use only one perform_request at the end

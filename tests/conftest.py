@@ -10,11 +10,11 @@ from tests.utils import (
 
 @pytest.fixture(scope='function')
 def connection():
-    es = get_connection()
-    create_index(es)
+    test_executor = get_connection()
+    create_index(test_executor)
 
-    yield es
-    delete_index(es)
+    yield test_executor
+    delete_index(test_executor)
 
 
 @pytest.fixture(scope="session", autouse=True)

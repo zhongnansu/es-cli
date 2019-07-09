@@ -9,7 +9,6 @@ import pyfiglet
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.enums import DEFAULT_BUFFER, EditingMode
 from prompt_toolkit.shortcuts import PromptSession, CompleteStyle
-from prompt_toolkit.document import Document
 from prompt_toolkit.filters import HasFocus, IsDone
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.layout.processors import (
@@ -29,7 +28,7 @@ from .config import (
 
 from collections import namedtuple
 from pygments.lexers.sql import SqlLexer
-from .connection import get_connection, execute_query
+from .executor import ESExecute, ConnectionFailException
 from cli_helpers.tabular_output import TabularOutputFormatter
 from cli_helpers.tabular_output.preprocessors import align_decimals, format_numbers
 from .esbuffer import pg_is_multiline
@@ -45,12 +44,13 @@ OutputSettings = namedtuple(
     "OutputSettings",
     "table_format is_vertical max_width style_output missingval",
 )
+
 OutputSettings.__new__.__defaults__ = (
     None,
     False,
     sys.maxsize,
     None,
-    "<null>",
+    "null",
 )
 
 
@@ -88,13 +88,15 @@ class ESCli:
     # TODO: Add index suggestion by using getIndex api
 
     def __init__(self,
-                 esclirc_file=None):
+                 esclirc_file=None,
+                 esexecute=None):
 
         # Load config.
         config = self.config = get_config(esclirc_file)
 
         self.prompt_app = None
-        self.connection = None
+
+        self.esexecute = esexecute
 
         self.syntax_style = config["main"]["syntax_style"]
         self.cli_style = config["colors"]
@@ -132,9 +134,8 @@ class ESCli:
 
         return prompt_app
 
-    def run_cli(self, endpoint, http_auth=None):
+    def run_cli(self):
 
-        self.connection, es_version = get_connection(endpoint, http_auth)
         self.prompt_app = self._build_cli()
 
         settings = OutputSettings(
@@ -143,43 +144,35 @@ class ESCli:
             table_format=self.table_format,
         )
 
-        # settings = {
-        #     "max_width": self.prompt_app.output.get_size().columns,
-        #     "style_output": self.style_output,
-        #     "table_format": self.table_format,
-        # }
-
-
         # print Banner
         banner = pyfiglet.figlet_format("Open Distro", font="slant")
         print(banner)
 
-        # print info data
-        print("Server: Open Distro for ES: %s" % es_version)
+        # print meta info
+        print("Server: Open Distro for ES: %s" % self.esexecute.es_version)
         print("Version:", __version__)
-        print("Endpoint: %s" % endpoint)
+        print("Endpoint: %s" % self.esexecute.endpoint)
 
         while True:
-            if self.connection:
-                try:
-                    text = self.prompt_app.prompt(message='escli' + '> ')
-                except KeyboardInterrupt:
-                    continue  # Control-C pressed. Try again.
-                except EOFError:
-                    break  # Control-D pressed.
-                # TODO: handle case that connection lost during the cli is sill running.
-                #  _handle_server_closed_connection(text)
-                try:
-                    data = execute_query(self.connection, text)
+            try:
+                text = self.prompt_app.prompt(message='escli' + '> ')
+            except KeyboardInterrupt:
+                continue  # Control-C pressed. Try again.
+            except EOFError:
+                break  # Control-D pressed.
 
-                    if data:
+            try:
+                data = self.esexecute.execute_query(text)
+                if data:
 
-                        output = format_output(data, settings)
-                        self.echo_via_pager('\n'.join(output))
-                    else:
-                        continue
-                except Exception as e:
-                    print(repr(e))
+                    output = format_output(data, settings)
+                    self.echo_via_pager('\n'.join(output))
+
+                else:
+                    continue
+
+            except Exception as e:
+                print(repr(e))
 
         print('GoodElasticBye!')
 
@@ -205,6 +198,17 @@ class ESCli:
             click.echo_via_pager(text, color=color)
         else:
             click.echo(text, color=color)
+
+    def connect(self, endpoint, http_auth=None):
+
+        try:
+            self.esexecute = ESExecute(endpoint, http_auth)
+
+        except ConnectionFailException as e:
+            click.echo(e)
+            sys.exit(0)
+
+
 
 
 @click.command()
@@ -268,7 +272,7 @@ def cli(
 ):
     """
     Provide endpoint for elasticsearch connection.
-    By Default, it uses http://localhost:9200 to connect
+    By default, it uses http://localhost:9200 to connect
     """
 
     if username and password:
@@ -276,24 +280,29 @@ def cli(
     else:
         http_auth = None
 
-    # handle single query without interaction with user
+    # handle single query without more interaction with user
     if query:
-        es, es_version = get_connection(endpoint, http_auth)
-        if explain:
-            res = execute_query(es, query, explain=True)
-        else:
-            res = execute_query(es, query, output_format=result_format)
-            if res and result_format == 'jdbc':
-                settings = OutputSettings(table_format='psql', is_vertical=is_vertical)
-                res = format_output(res, settings)
-                res = '\n'.join(res)
+        try:
+            esexecutor = ESExecute(endpoint, http_auth)
+            if explain:
+                res = esexecutor.execute_query(query, explain=True)
+            else:
+                res = esexecutor.execute_query(query, output_format=result_format)
+                if res and result_format == 'jdbc':
+                    settings = OutputSettings(table_format='psql', is_vertical=is_vertical)
+                    res = format_output(res, settings)
+                    res = '\n'.join(res)
 
-        click.echo(res)
-        sys.exit(0)
+            click.echo(res)
+            sys.exit(0)
+
+        except ConnectionFailException as e:
+            click.echo(e)
+            sys.exit(0)
 
     escli = ESCli(esclirc_file=esclirc)
-
-    escli.run_cli(endpoint, http_auth)
+    escli.connect(endpoint, http_auth)
+    escli.run_cli()
 
 
 def format_output(data, settings):
@@ -306,6 +315,11 @@ def format_output(data, settings):
 
     datarows = data['datarows']
     schema = data['schema']
+    total_hits = data['total']
+    cur_size = data['size']
+
+    # TODO: Display fraction of number of rows / total hits
+
     fields = []
     types = []
 
@@ -329,15 +343,14 @@ def format_output(data, settings):
         "sep_title": "RECORD {n}",
         "sep_character": "-",
         "sep_length": (1, 25),
-        # todo think about using config at the end
-        # todo encapsulate to a OutputSetting object, refer to pgcli source code
+        "missing_value": settings.missingval,
         "preprocessors": (format_numbers, format_arrays),
         "disable_numparse": True,
         "preserve_whitespace": True,
         "style": settings.style_output
     }
 
-    # get header and type as list
+    # get header and type as lists, not sure if we need this info
     for i in schema:
         fields.append(i['name'])
         types.append(i['type'])

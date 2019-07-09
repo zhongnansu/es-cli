@@ -1,24 +1,26 @@
 from elasticsearch import Elasticsearch, helpers
 import json
 import pytest
-from escli.connection import execute_query
+import sys
+from escli.executor import ESExecute, ConnectionFailException
 from escli.main import OutputSettings, format_output
 
 TEST_INDEX_NAME = 'escli_test'
 HOST = 'http://localhost:9200'
 
 
-def create_index(client):
-
-    client.indices.create(index=TEST_INDEX_NAME)
-
-
-def delete_index(client):
-
-    client.indices.delete(index=TEST_INDEX_NAME)
+def create_index(test_executor):
+    es = test_executor.conn
+    es.indices.create(index=TEST_INDEX_NAME)
 
 
-def load_file(es, filename='accounts.json'):
+def delete_index(test_executor):
+    es = test_executor.conn
+    es.indices.delete(index=TEST_INDEX_NAME)
+
+
+def load_file(test_executor, filename='accounts.json'):
+    es = test_executor.conn
 
     filepath = './test_data/' + filename
 
@@ -31,23 +33,24 @@ def load_file(es, filename='accounts.json'):
     helpers.bulk(es, load_json(), index=TEST_INDEX_NAME)
 
 
-def load_data(es, doc):
+def load_data(test_executor, doc):
+    es = test_executor.conn
     es.index(index=TEST_INDEX_NAME, body=doc)
     es.indices.refresh(index=TEST_INDEX_NAME)
 
 
 def get_connection():
 
-    client = Elasticsearch([HOST], verify_certs=True)
+    test_executor = ESExecute(endpoint=HOST)
 
-    return client
+    return test_executor
 
 
 try:
     conn = get_connection()
     CAN_CONNECT_TO_ES = True
 
-except:
+except ConnectionFailException:
     CAN_CONNECT_TO_ES = False
 
 
@@ -57,9 +60,10 @@ estest = pytest.mark.skipif(
 )
 
 
-def run(es, query):
+def run(test_executor, query):
 
-    data = execute_query(es, query)
+    data = test_executor.execute_query(query=query)
+
     if data:
         settings = OutputSettings(
             table_format='psql'

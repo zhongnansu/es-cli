@@ -1,7 +1,6 @@
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import ConnectionError
 import click
-import sys
 from elasticsearch.connection import create_ssl_context
 import ssl
 from requests_aws4auth import AWS4Auth
@@ -10,22 +9,31 @@ import urllib3
 import logging
 
 
-class ConnectionFailException (Exception):
+class ConnectionFailException(Exception):
     pass
 
 
 class ESExecute:
 
     def __init__(
-        self,
-        endpoint=None,
-        http_auth=None,
+            self,
+            endpoint=None,
+            http_auth=None,
 
     ):
         self.conn = None
-        self.get_connection(endpoint, http_auth)
         self.es_version = None
+        self.get_connection(endpoint, http_auth)
+        self.indices_list = self.get_indices()
         self.endpoint = endpoint
+
+    def get_indices(self):
+
+        es = self.conn
+
+        res = es.indices.get_alias().keys()
+
+        return list(res)
 
     def get_connection(self, endpoint, http_auth=None):
 
@@ -79,8 +87,6 @@ class ESExecute:
 
             self.conn = es
             self.es_version = es_version
-
-            return es, es_version
 
         else:
             raise ConnectionFailException('Can not connect to endpoint: ' + endpoint)

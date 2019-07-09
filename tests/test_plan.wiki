@@ -4,26 +4,26 @@
     * [done] Test pagination with different output length / width.
     * [done] Test table formatted output.
     * [done] Test successful convert from horizontal to vertical with confirmation.
+    * [ ] Test display number of rows / total hits info, by default the backend retrieves 200 rows at most for once
 
 
     == Connection ==
     * [done] Check connecting to a local database.
-    * [ ] Check connecting to a Open Distro ES cluster with basic authentication. how???
-    * [ ] Check connecting to a Open Distro ES cluster with basic authentication. how???
-    * [ ] Check connecting to a non-existent database.
-    * [ ] Check lost-connection scenario.
+    * [ ] Check lost-connection during execution scenario. (Behave)
+    * [ ] Check connection fail when launch the app scenario. (Behave)
 
 
     == Execution ==
     * [done] Test successful execution given a query.
-    * [ ] Test unsuccessful execution with a syntax error.
-    * [ ] Test unsuccessful execution with a invalid request.
-    * [ ] Test load config.
+    * [done] Test unsuccessful execution with a invalid SQL query.
+    * [done] Test config.
 
 
-    == Nested commands ==
+    == Nested commands with params ==
     * [ ] Test write result to a file.
-    * [ ] Test command with combination of more params.
+    * [ ] Test explain param
+    * [ ] Test query and format param
+    * [ ] Test vertical param
 
 
     == Naive Autocompletion ==

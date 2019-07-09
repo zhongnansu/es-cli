@@ -98,8 +98,6 @@ def test_format_output_vertical():
     assert "\n".join(expanded_results) == "\n".join(expanded)
 
 
-
-
 @pytest.fixture
 def pset_pager_mocks():
     cli = ESCli()

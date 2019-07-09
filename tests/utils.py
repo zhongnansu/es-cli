@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch, helpers
+from elasticsearch import Elasticsearch, helpers, ConnectionPool
 import json
 import pytest
 import sys
@@ -17,6 +17,10 @@ def create_index(test_executor):
 def delete_index(test_executor):
     es = test_executor.conn
     es.indices.delete(index=TEST_INDEX_NAME)
+
+
+def close_connection(es):
+    ConnectionPool.close(es)
 
 
 def load_file(test_executor, filename='accounts.json'):

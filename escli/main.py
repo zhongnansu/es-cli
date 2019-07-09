@@ -53,37 +53,36 @@ OutputSettings.__new__.__defaults__ = (
     "null",
 )
 
+KEYWORDS = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
+            'ASC', 'BEFORE', 'BEGIN', 'BETWEEN',
+            'BIGINT', 'BINARY', 'BY', 'CASE', 'CHANGE MASTER TO', 'CHAR',
+            'CHARACTER SET', 'CHECK', 'COLLATE', 'COLUMN', 'COMMENT',
+            'COMMIT', 'CONSTRAINT', 'CREATE', 'CURRENT',
+            'CURRENT_TIMESTAMP', 'DATABASE', 'DATE', 'DECIMAL', 'DEFAULT',
+            'DELETE FROM', 'DELIMITER', 'DESC', 'DESCRIBE', 'DROP',
+            'ELSE', 'END', 'ENGINE', 'ESCAPE', 'EXISTS', 'FILE', 'FLOAT',
+            'FOR', 'FOREIGN KEY', 'FORMAT', 'FROM', 'FULL', 'FUNCTION',
+            'GRANT', 'GROUP BY', 'HAVING', 'HOST', 'IDENTIFIED', 'IN',
+            'INCREMENT', 'INDEX', 'INT', 'INTEGER',
+            'INTERVAL', 'INTO', 'IS', 'JOIN', 'KEY', 'LEFT', 'LEVEL',
+            'LIKE', 'LIMIT', 'LOCK', 'LOGS', 'LONG', 'MASTER',
+            'MEDIUMINT', 'MODE', 'MODIFY', 'NOT', 'NULL', 'NUMBER',
+            'OFFSET', 'ON', 'OPTION', 'OR', 'ORDER BY', 'OUTER', 'OWNER',
+            'PASSWORD', 'PORT', 'PRIMARY', 'PRIVILEGES', 'PROCESSLIST',
+            'PURGE', 'REFERENCES', 'REGEXP', 'RENAME', 'REPAIR', 'RESET',
+            'REVOKE', 'RIGHT', 'ROLLBACK', 'ROW', 'ROWS', 'ROW_FORMAT',
+            'SAVEPOINT', 'SELECT', 'SESSION', 'SET', 'SHARE', 'SHOW',
+            'SLAVE', 'SMALLINT', 'SMALLINT', 'START', 'STOP', 'TABLE',
+            'THEN', 'TINYINT', 'TO', 'TRANSACTION', 'TRIGGER', 'TRUNCATE',
+            'UNION', 'UNIQUE', 'UNSIGNED', 'UPDATE', 'USE', 'USER',
+            'USING', 'VALUES', 'VARCHAR', 'VIEW', 'WHEN', 'WHERE', 'WITH']
+
+FUNCTIONS = ['AVG', 'CONCAT', 'COUNT', 'DISTINCT', 'FIRST', 'FORMAT',
+             'FROM_UNIXTIME', 'LAST', 'LCASE', 'LEN', 'MAX', 'MID',
+             'MIN', 'NOW', 'ROUND', 'SUM', 'TOP', 'UCASE', 'UNIX_TIMESTAMP']
+
 
 class ESCli:
-    keywords = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
-                'ASC', 'AUTO_INCREMENT', 'BEFORE', 'BEGIN', 'BETWEEN',
-                'BIGINT', 'BINARY', 'BY', 'CASE', 'CHANGE MASTER TO', 'CHAR',
-                'CHARACTER SET', 'CHECK', 'COLLATE', 'COLUMN', 'COMMENT',
-                'COMMIT', 'CONSTRAINT', 'CREATE', 'CURRENT',
-                'CURRENT_TIMESTAMP', 'DATABASE', 'DATE', 'DECIMAL', 'DEFAULT',
-                'DELETE FROM', 'DELIMITER', 'DESC', 'DESCRIBE', 'DROP',
-                'ELSE', 'END', 'ENGINE', 'ESCAPE', 'EXISTS', 'FILE', 'FLOAT',
-                'FOR', 'FOREIGN KEY', 'FORMAT', 'FROM', 'FULL', 'FUNCTION',
-                'GRANT', 'GROUP BY', 'HAVING', 'HOST', 'IDENTIFIED', 'IN',
-                'INCREMENT', 'INDEX', 'INSERT INTO', 'INT', 'INTEGER',
-                'INTERVAL', 'INTO', 'IS', 'JOIN', 'KEY', 'LEFT', 'LEVEL',
-                'LIKE', 'LIMIT', 'LOCK', 'LOGS', 'LONG', 'MASTER',
-                'MEDIUMINT', 'MODE', 'MODIFY', 'NOT', 'NULL', 'NUMBER',
-                'OFFSET', 'ON', 'OPTION', 'OR', 'ORDER BY', 'OUTER', 'OWNER',
-                'PASSWORD', 'PORT', 'PRIMARY', 'PRIVILEGES', 'PROCESSLIST',
-                'PURGE', 'REFERENCES', 'REGEXP', 'RENAME', 'REPAIR', 'RESET',
-                'REVOKE', 'RIGHT', 'ROLLBACK', 'ROW', 'ROWS', 'ROW_FORMAT',
-                'SAVEPOINT', 'SELECT', 'SESSION', 'SET', 'SHARE', 'SHOW',
-                'SLAVE', 'SMALLINT', 'SMALLINT', 'START', 'STOP', 'TABLE',
-                'THEN', 'TINYINT', 'TO', 'TRANSACTION', 'TRIGGER', 'TRUNCATE',
-                'UNION', 'UNIQUE', 'UNSIGNED', 'UPDATE', 'USE', 'USER',
-                'USING', 'VALUES', 'VARCHAR', 'VIEW', 'WHEN', 'WHERE', 'WITH']
-
-    functions = ['AVG', 'CONCAT', 'COUNT', 'DISTINCT', 'FIRST', 'FORMAT',
-                 'FROM_UNIXTIME', 'LAST', 'LCASE', 'LEN', 'MAX', 'MID',
-                 'MIN', 'NOW', 'ROUND', 'SUM', 'TOP', 'UCASE', 'UNIX_TIMESTAMP']
-
-    sql_completer = WordCompleter(keywords + functions, ignore_case=True)
 
     # TODO: Add index suggestion by using getIndex api
 
@@ -110,14 +109,16 @@ class ESCli:
         self.multi_line = True
         self.multiline_mode = 'escli'
 
+        sql_completer = WordCompleter(KEYWORDS + FUNCTIONS + self.esexecute.indices_list, ignore_case=True)
+
         def get_continuation(width, line_number, is_soft_wrap):
             continuation = self.multiline_continuation_char * (width - 1) + " "
             return [("class:continuation", continuation)]
 
         prompt_app = PromptSession(
             lexer=PygmentsLexer(SqlLexer),
-            completer=self.sql_completer,
-            complete_while_typing=True,
+            completer=sql_completer,
+            # complete_while_typing=True,
             # completer=DynamicCompleter(lambda: self.completer),
             # history=history,
             style=style_factory(self.syntax_style, self.cli_style),
@@ -207,8 +208,6 @@ class ESCli:
         except ConnectionFailException as e:
             click.echo(e)
             sys.exit(0)
-
-
 
 
 @click.command()
@@ -306,7 +305,6 @@ def cli(
 
 
 def format_output(data, settings):
-
     table_format = "vertical" if settings.is_vertical else settings.table_format
 
     formatter = TabularOutputFormatter(format_name=table_format)

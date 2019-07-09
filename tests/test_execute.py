@@ -8,6 +8,7 @@ from tests.utils import (
     load_file,
     create_index,
     delete_index,
+    close_connection,
     run,
     TEST_INDEX_NAME,
 )
@@ -44,6 +45,22 @@ def test_nonexistent_index(connection):
 
     with mock.patch('escli.executor.click.echo') as mock_echo:
         run(connection, f'select * from non-existed')
+
     mock_echo.assert_called_with(
         expected
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

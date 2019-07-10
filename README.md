@@ -7,3 +7,7 @@
 - `cd` into project folder.
 - `pip install --editable .` will install all dependencies in `setup.py`.
 - use wake word `escli` to launch the cli.
+
+## how to run tests
+- `pip install -r requirements.txt`
+- run `pytest`

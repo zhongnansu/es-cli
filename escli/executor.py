@@ -1,5 +1,5 @@
 from elasticsearch import Elasticsearch, RequestsHttpConnection
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch.exceptions import ConnectionError, RequestError
 import click
 from elasticsearch.connection import create_ssl_context
 import ssl
@@ -109,13 +109,14 @@ class ESExecute:
 
         if explain:
             try:
-                data = es.transport.perform_request(url="/_opendistro/_sql/_explain", method="POST", body={
-                    'query': final_query
-                })
+                data = es.transport.perform_request(url="/_opendistro/_sql/_explain", method="POST",
+                                                    body={
+                                                        'query': final_query
+                                                    })
                 return data
-            except Exception as e:
-                click.echo(e.info['error'])
 
+            except RequestError as e:
+                click.secho(message=str(e.info['error']), fg='red')
         else:
             try:
                 data = es.transport.perform_request(url="/_opendistro/_sql/", method="POST",
@@ -125,8 +126,9 @@ class ESExecute:
                                                     })
                 return data
 
-            except ConnectionError as e:
+            # lost connection during execution
+            except ConnectionError:
                 self._handle_server_closed_connection(self.endpoint)
 
-            except Exception as e:
-                click.echo(e.info['error'])
+            except RequestError as e:
+                click.secho(message=str(e.info['error']), fg='red')

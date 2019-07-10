@@ -1,7 +1,5 @@
 # coding=utf-8
 from __future__ import unicode_literals, print_function
-import os
-import platform
 import mock
 
 import pytest
@@ -38,6 +36,7 @@ def test_format_output():
         "size": 1,
         "status": 200
     }
+
     results = format_output(
         data, settings
     )

@@ -5,10 +5,6 @@ from textwrap import dedent
 from tests.utils import (
     estest,
     load_data,
-    load_file,
-    create_index,
-    delete_index,
-    close_connection,
     run,
     TEST_INDEX_NAME,
 )
@@ -46,16 +42,17 @@ def test_nonexistent_index(connection):
     load_data(connection, doc)
     expected = {'reason': 'Invalid SQL query', 'details': 'no such index [non-existed]', 'type': 'IndexNotFoundException'}
 
-    with mock.patch('escli.executor.click.echo') as mock_echo:
+    with mock.patch('escli.executor.click.secho') as mock_secho:
         run(connection, f'select * from non-existed')
 
-    mock_echo.assert_called_with(
-        expected
+    mock_secho.assert_called_with(
+        message=str(expected),
+        fg='red'
     )
 
 
 def test_connection_fail_exception():
-    """test that exception is raised for invalid endpoint"""
+    """test that exception is raised when connect to invalid endpoint"""
 
     invalid_endpoint = 'http://invalid:9200'
 

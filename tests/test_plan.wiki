@@ -3,14 +3,13 @@
     == Display ==
     * [done] Test pagination with different output length / width.
     * [done] Test table formatted output.
-    * [done] Test successful convert from horizontal to vertical with confirmation.
-    * [ ] Test display number of rows / total hits info, by default the backend retrieves 200 rows at most for once
+    * [done] Test successful convertion from horizontal to vertical with confirmation.
 
 
     == Connection ==
     * [done] Check connecting to a local database.
     * [ ] Check lost-connection during execution scenario. (Behave)
-    * [ ] Check connection fail when launch the app scenario. (Behave)
+    * [done] Test connection fail when connect to invalid endpoint
 
 
     == Execution ==
@@ -26,15 +25,12 @@
     * [ ] Test vertical param
 
 
-    == Naive Autocompletion ==
+    == Auto completion ==
     * [ ] Input empty string, ask for completions - Everything.
     * [ ] Input partial prefix, ask for completions - Stars with prefix.
     * [ ] Input fully autocompleted string, ask for completions - Only full match.
     * [ ] Input non-existent prefix, ask for completions - nothing.
     * [ ] Input lowercase prefix - case insensitive completions.
-
-
-    == Smart Autocompletion ==
     * [ ] Input SELECT * FROM - Table names only.
 
 

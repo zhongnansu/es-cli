@@ -19,7 +19,6 @@ from prompt_toolkit.layout.processors import (
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from .config import (
     config_location,
-    ensure_dir_exists,
     get_config,
 
 )
@@ -28,9 +27,9 @@ from collections import namedtuple
 from pygments.lexers.sql import SqlLexer
 from .executor import ESExecute, ConnectionFailException
 from cli_helpers.tabular_output import TabularOutputFormatter
-from cli_helpers.tabular_output.preprocessors import align_decimals, format_numbers
-from .esbuffer import pg_is_multiline
-from .pgstyle import style_factory, style_factory_output
+from cli_helpers.tabular_output.preprocessors import format_numbers
+from .esbuffer import es_is_multiline
+from .esstyle import style_factory, style_factory_output
 from .encodingutils import text_type
 
 # Ref: https://stackoverflow.com/questions/30425105/filter-special-chars-such-as-color-codes-from-shell-output
@@ -86,7 +85,7 @@ class ESCli:
                  esclirc_file=None,
                  esexecute=None):
 
-        # Load config.
+        # Load config file
         config = self.config = get_config(esclirc_file)
 
         self.prompt_app = None
@@ -120,7 +119,7 @@ class ESCli:
             # history=history,
             style=style_factory(self.syntax_style, self.cli_style),
             prompt_continuation=get_continuation,
-            multiline=pg_is_multiline(self),
+            multiline=es_is_multiline(self),
             auto_suggest=AutoSuggestFromHistory(),
             input_processors=[ConditionalProcessor(
                 processor=HighlightMatchingBracketProcessor(
@@ -311,8 +310,6 @@ def format_output(data, settings):
     total_hits = data['total']
     cur_size = data['size']
 
-    # TODO: Display fraction of number of rows / total hits
-
     fields = []
     types = []
 
@@ -348,12 +345,10 @@ def format_output(data, settings):
         fields.append(i['name'])
         types.append(i['type'])
 
-    # if total_hits > 200:
-    #     click.secho(message="Showing you ", fg="red")
-
     output = formatter.format_output(datarows, fields, **output_kwargs)
 
     fraction_message = f'data retrieved / total hits = {cur_size}/{total_hits}'
+
     if total_hits > 200:
         fraction_message += '\n' + f'USE LIMIT in your query to retrieve more than 200 lines of data'
 

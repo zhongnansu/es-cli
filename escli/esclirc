@@ -37,8 +37,8 @@ auto_expand = False
 generate_aliases = False
 
 # log_file location.
-# In Unix/Linux: ~/.config/pgcli/log
-# In Windows: %USERPROFILE%\AppData\Local\dbcli\pgcli\log
+# In Unix/Linux: ~/.config/escli/log
+# In Windows: %USERPROFILE%\AppData\Local\dbcli\escli\log
 # %USERPROFILE% is typically C:\Users\{username}
 log_file = default
 
@@ -46,8 +46,8 @@ log_file = default
 keyword_casing = auto
 
 # casing_file location.
-# In Unix/Linux: ~/.config/pgcli/casing
-# In Windows: %USERPROFILE%\AppData\Local\dbcli\pgcli\casing
+# In Unix/Linux: ~/.config/escli/casing
+# In Windows: %USERPROFILE%\AppData\Local\dbcli\escli\casing
 # %USERPROFILE% is typically C:\Users\{username}
 casing_file = default
 
@@ -59,8 +59,8 @@ generate_casing_file = False
 case_column_headers = True
 
 # history_file location.
-# In Unix/Linux: ~/.config/pgcli/history
-# In Windows: %USERPROFILE%\AppData\Local\dbcli\pgcli\history
+# In Unix/Linux: ~/.config/escli/history
+# In Windows: %USERPROFILE%\AppData\Local\dbcli\escli\history
 # %USERPROFILE% is typically C:\Users\{username}
 history_file = default
 

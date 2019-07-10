@@ -2,8 +2,6 @@ from setuptools import setup
 import re
 import ast
 
-# TODO: Update dependency list
-# for test purpose
 install_requirements = [
     "click >= 4.1",
     "prompt_toolkit >= 2.0.6",
@@ -30,13 +28,9 @@ setup(
     author_email="zhongnan.su@outlook.com",
     version=version,
     license="BSD",
-    # url="http://pgcli.com",
-    # packages=find_packages(),
-    # package_data={"pgcli": ["pgclirc", "packages/pgliterals/pgliterals.json"]},
+    url="https://opendistro.github.io/for-elasticsearch-docs/",
     description=description,
-    # long_description=open("README.rst").read(),
     install_requires=install_requirements,
-    # extras_require={"keyring": ["keyring >= 12.2.0"]},
     entry_points="""
         [console_scripts]
         escli=escli.main:cli

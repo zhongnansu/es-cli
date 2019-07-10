@@ -1,9 +1,9 @@
 from setuptools import setup
 import re
 import ast
-import platform
 
 # TODO: Update dependency list
+# for test purpose
 install_requirements = [
     "click >= 4.1",
     "prompt_toolkit >= 2.0.6",

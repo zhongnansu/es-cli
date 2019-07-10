@@ -169,13 +169,10 @@ class ESCli:
                     output = format_output(data, settings)
                     self.echo_via_pager('\n'.join(output))
 
-                else:
-                    continue
-
             except Exception as e:
                 print(repr(e))
 
-        print('GoodElasticBye!')
+        print('Good Elastic Bye!')
 
     def is_too_wide(self, line):
         """Will this line be too wide to fit into terminal?"""
@@ -311,6 +308,7 @@ def format_output(data, settings):
 
     max_width = settings.max_width
 
+    # parse response data
     datarows = data['datarows']
     schema = data['schema']
     total_hits = data['total']
@@ -353,16 +351,24 @@ def format_output(data, settings):
         fields.append(i['name'])
         types.append(i['type'])
 
+    # if total_hits > 200:
+    #     click.secho(message="Showing you ", fg="red")
+
     output = formatter.format_output(datarows, fields, **output_kwargs)
+
+    fraction_message = f'data retrieved / total hits = {cur_size}/{total_hits}'
+    if total_hits > 200:
+        fraction_message += '\n' + f'USE LIMIT in your query to retrieve more than 200 lines of data'
 
     # check width overflow, change format_name for better visual effect
     first_line = next(output)
-    output = itertools.chain([first_line], output)
+    output = itertools.chain([fraction_message], [first_line], output)
 
     if len(first_line) > max_width:
         click.secho(message="Output longer than terminal width", fg="red")
         if click.confirm("Do you want to display data vertically for better visual effect?"):
             output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
+            output = itertools.chain([fraction_message], output)
 
     # TODO: Add row limit. Refer to pgcli -> main -> line 866
 

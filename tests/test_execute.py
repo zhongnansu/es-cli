@@ -13,6 +13,8 @@ from tests.utils import (
     TEST_INDEX_NAME,
 )
 
+from escli.executor import ESExecute, ConnectionFailException
+
 
 @estest
 def test_conn_and_query(connection):
@@ -25,6 +27,7 @@ def test_conn_and_query(connection):
 
     assert run(connection, f'select * from {TEST_INDEX_NAME}') == dedent(
         """\
+        data retrieved / total hits = 1/1
         +-----+
         | a   |
         |-----|
@@ -51,7 +54,15 @@ def test_nonexistent_index(connection):
     )
 
 
+def test_connection_fail_exception():
+    """test that exception is raised for invalid endpoint"""
 
+    invalid_endpoint = 'http://invalid:9200'
+
+    with pytest.raises(ConnectionFailException) as e:
+        assert ESExecute(endpoint=invalid_endpoint)
+
+    assert str(e.value) == f'Can not connect to endpoint: {invalid_endpoint}'
 
 
 

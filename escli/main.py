@@ -18,8 +18,6 @@ from prompt_toolkit.layout.processors import (
 )
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from .config import (
-    get_casing_file,
-    load_config,
     config_location,
     ensure_dir_exists,
     get_config,
@@ -84,8 +82,6 @@ FUNCTIONS = ['AVG', 'CONCAT', 'COUNT', 'DISTINCT', 'FIRST', 'FORMAT',
 
 class ESCli:
 
-    # TODO: Add index suggestion by using getIndex api
-
     def __init__(self,
                  esclirc_file=None,
                  esexecute=None):
@@ -109,6 +105,7 @@ class ESCli:
         self.multi_line = True
         self.multiline_mode = 'escli'
 
+        # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
         sql_completer = WordCompleter(KEYWORDS + FUNCTIONS + self.esexecute.indices_list, ignore_case=True)
 
         def get_continuation(width, line_number, is_soft_wrap):
@@ -118,7 +115,7 @@ class ESCli:
         prompt_app = PromptSession(
             lexer=PygmentsLexer(SqlLexer),
             completer=sql_completer,
-            # complete_while_typing=True,
+            complete_while_typing=True,
             # completer=DynamicCompleter(lambda: self.completer),
             # history=history,
             style=style_factory(self.syntax_style, self.cli_style),

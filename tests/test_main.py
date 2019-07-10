@@ -28,7 +28,7 @@ def test_format_output():
                 "type": "long"
             }
         ],
-        "total": 2,
+        "total": 1,
         "datarows": [
             [
                 "Tim",
@@ -43,6 +43,7 @@ def test_format_output():
     )
 
     expected = [
+        "data retrieved / total hits = 1/1",
         "+--------+-------+",
         "| name   | age   |",
         "|--------+-------|",
@@ -65,7 +66,7 @@ def test_format_output_vertical():
                 "type": "long"
             }
         ],
-        "total": 2,
+        "total": 1,
         "datarows": [
             [
                 "Tim",
@@ -77,6 +78,7 @@ def test_format_output_vertical():
     }
 
     expanded = [
+        "data retrieved / total hits = 1/1",
         "-[ RECORD 1 ]-------------------------",
         "name | Tim",
         "age  | 24",
@@ -167,6 +169,7 @@ def test_pager(term_height, term_width, text, use_pager, pset_pager_mocks):
 def test_color_pattern(text, expected_length, pset_pager_mocks):
     cli = pset_pager_mocks[0]
     assert len(COLOR_CODE_REGEX.sub("", text)) == expected_length
+
 
 
 

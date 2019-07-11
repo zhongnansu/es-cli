@@ -7,14 +7,13 @@ import itertools
 import pyfiglet
 
 from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.enums import DEFAULT_BUFFER, EditingMode
-from prompt_toolkit.shortcuts import PromptSession, CompleteStyle
+from prompt_toolkit.enums import DEFAULT_BUFFER
+from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.filters import HasFocus, IsDone
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.layout.processors import (
     ConditionalProcessor,
     HighlightMatchingBracketProcessor,
-    TabsProcessor,
 )
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from .config import (

@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import re
 import ast
 
@@ -24,15 +24,34 @@ description = "CLI for Elasticsearch Open Distro SQL. With auto-completion and s
 
 setup(
     name="escli",
-    author="AES",
+    author="Zhongnan",
     author_email="zhongnan.su@outlook.com",
     version=version,
     license="BSD",
     url="https://opendistro.github.io/for-elasticsearch-docs/",
+    packages=find_packages(),
     description=description,
     install_requires=install_requirements,
     entry_points="""
         [console_scripts]
         escli=escli.main:cli
-    """
+    """,
+    classifiers=[
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: SQL",
+        "Topic :: Database",
+        "Topic :: Database :: Front-Ends",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+    ],
 )

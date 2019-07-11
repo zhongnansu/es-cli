@@ -346,10 +346,10 @@ def format_output(data, settings):
 
     output = formatter.format_output(datarows, fields, **output_kwargs)
 
-    fraction_message = f'data retrieved / total hits = {cur_size}/{total_hits}'
+    fraction_message = 'data retrieved / total hits = %d/%d' % (cur_size, total_hits)
 
     if total_hits > 200:
-        fraction_message += '\n' + f'USE LIMIT in your query to retrieve more than 200 lines of data'
+        fraction_message += '\n' + 'USE LIMIT in your query to retrieve more than 200 lines of data'
 
     # check width overflow, change format_name for better visual effect
     first_line = next(output)

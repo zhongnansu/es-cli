@@ -21,7 +21,7 @@ def test_conn_and_query(connection):
 
     load_data(connection, doc)
 
-    assert run(connection, f'select * from {TEST_INDEX_NAME}') == dedent(
+    assert run(connection, 'select * from %s' % TEST_INDEX_NAME) == dedent(
         """\
         data retrieved / total hits = 1/1
         +-----+
@@ -43,7 +43,7 @@ def test_nonexistent_index(connection):
     expected = {'reason': 'Invalid SQL query', 'details': 'no such index [non-existed]', 'type': 'IndexNotFoundException'}
 
     with mock.patch('escli.executor.click.secho') as mock_secho:
-        run(connection, f'select * from non-existed')
+        run(connection, 'select * from non-existed')
 
     mock_secho.assert_called_with(
         message=str(expected),
@@ -59,7 +59,7 @@ def test_connection_fail_exception():
     with pytest.raises(ConnectionFailException) as e:
         assert ESExecute(endpoint=invalid_endpoint)
 
-    assert str(e.value) == f'Can not connect to endpoint: {invalid_endpoint}'
+    assert str(e.value) == 'Can not connect to endpoint: %s' % invalid_endpoint
 
 
 

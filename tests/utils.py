@@ -79,25 +79,6 @@ def run(test_executor, query):
         return res
 
 
-# es = get_connection()
-# create_index(es)
-#
-# doc = {
-#         'name': 'David',
-#         'age': 23,
-#     }
-#
-# query = f'select * from {TEST_INDEX_NAME}'
-#
-# load_data(es, doc)
-# run(es, query)
-#
-#
-# delete_index(es)
-
-
-
-
 
 
 

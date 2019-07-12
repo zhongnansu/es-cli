@@ -68,7 +68,7 @@ KEYWORDS = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
             'PURGE', 'REFERENCES', 'REGEXP', 'RENAME', 'REPAIR', 'RESET',
             'REVOKE', 'RIGHT', 'ROLLBACK', 'ROW', 'ROWS', 'ROW_FORMAT',
             'SAVEPOINT', 'SELECT', 'SESSION', 'SET', 'SHARE', 'SHOW',
-            'SLAVE', 'SMALLINT', 'SMALLINT', 'START', 'STOP', 'TABLE',
+            'SLAVE', 'SMALLINT', 'SMALLINT', 'START', 'STOP', 'TABLES',
             'THEN', 'TINYINT', 'TO', 'TRANSACTION', 'TRIGGER', 'TRUNCATE',
             'UNION', 'UNIQUE', 'UNSIGNED', 'UPDATE', 'USE', 'USER',
             'USING', 'VALUES', 'VARCHAR', 'VIEW', 'WHEN', 'WHERE', 'WITH']
@@ -145,8 +145,8 @@ class ESCli:
         print(banner)
 
         # print meta info
-        print("Server: Open Distro for ES: %s" % self.esexecute.es_version)
-        print("Version:", __version__)
+        print("Server: Open Distro for ES %s" % self.esexecute.es_version)
+        print("Version: %s" % __version__)
         print("Endpoint: %s" % self.esexecute.endpoint)
 
         while True:
@@ -262,7 +262,7 @@ def cli(
         password,
 ):
     """
-    Provide endpoint for elasticsearch connection.
+    Provide endpoint for Elasticsearch connection.
     By default, it uses http://localhost:9200 to connect
     """
 

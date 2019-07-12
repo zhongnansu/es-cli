@@ -30,6 +30,7 @@ setup(
     license="BSD",
     url="https://opendistro.github.io/for-elasticsearch-docs/",
     packages=find_packages(),
+    package_data={"escli": ["esclirc"]},
     description=description,
     install_requires=install_requirements,
     entry_points="""

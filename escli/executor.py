@@ -21,6 +21,7 @@ class ESExecute:
             http_auth=None,
 
     ):
+
         self.conn = None
         self.es_version = None
         self.get_connection(endpoint, http_auth)
@@ -30,7 +31,6 @@ class ESExecute:
     def get_indices(self):
 
         es = self.conn
-
         res = es.indices.get_alias().keys()
 
         return list(res)
@@ -93,6 +93,7 @@ class ESExecute:
 
     def _handle_server_closed_connection(self, endpoint):
         """Used during CLI execution."""
+
         try:
             click.secho("Reconnecting...", fg="green")
             self.get_connection(endpoint)

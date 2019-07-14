@@ -110,29 +110,18 @@ vi = False
 on_error = STOP
 
 # Set threshold for row limit prompt. Use 0 to disable prompt.
+# maybe not now, since elasticsearch opendisto sql plugin returns 200 rows of data by default if not
+# using LIMIT.
 row_limit = 1000
 
 # Skip intro on startup and goodbye on exit
 less_chatty = False
 
-# Postgres prompt
-# \t - Current date and time
-# \u - Username
-# \h - Short hostname of the server (up to first '.')
-# \H - Hostname of the server
-# \d - Database name
-# \p - Database port
-# \i - Postgres PID
-# \# - "@" sign if logged in as superuser, '>' in other case
-# \n - Newline
-# \dsn_alias - name of dsn alias if -D option is used (empty otherwise)
-prompt = '\u@\h:\d> '
-
 # Number of lines to reserve for the suggestion menu
 min_num_menu_lines = 4
 
 # Character used to left pad multi-line queries to match the prompt size.
-multiline_continuation_char = ''
+multiline_continuation_char = '.'
 
 # The string used in place of a null value.
 null_string = '<null>'
@@ -170,12 +159,3 @@ bottom-toolbar.transaction.failed = 'bg:#222222 #ff005f bold'
 output.header = "#00ff5f bold"
 output.odd-row = ""
 output.even-row = ""
-
-# Named queries are queries you can execute by name.
-[named queries]
-
-# DSN to call by -D option
-[alias_dsn]
-# example_dsn = postgresql://[user[:password]@][netloc][:port][/dbname]
-
-

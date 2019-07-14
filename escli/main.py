@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from .__init__ import __version__
+
 import click
 import sys
 import re
@@ -19,7 +20,6 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from .config import (
     config_location,
     get_config,
-
 )
 
 from collections import namedtuple
@@ -30,6 +30,7 @@ from cli_helpers.tabular_output.preprocessors import format_numbers
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
 from .encodingutils import text_type
+from .esliterals.main import get_literals
 
 # Ref: https://stackoverflow.com/questions/30425105/filter-special-chars-such-as-color-codes-from-shell-output
 COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
@@ -49,34 +50,6 @@ OutputSettings.__new__.__defaults__ = (
     "null",
 )
 
-KEYWORDS = ['ACCESS', 'ADD', 'ALL', 'ALTER TABLE', 'AND', 'ANY', 'AS',
-            'ASC', 'BEFORE', 'BEGIN', 'BETWEEN',
-            'BIGINT', 'BINARY', 'BY', 'CASE', 'CHANGE MASTER TO', 'CHAR',
-            'CHARACTER SET', 'CHECK', 'COLLATE', 'COLUMN', 'COMMENT',
-            'COMMIT', 'CONSTRAINT', 'CREATE', 'CURRENT',
-            'CURRENT_TIMESTAMP', 'DATABASE', 'DATE', 'DECIMAL', 'DEFAULT',
-            'DELETE FROM', 'DELIMITER', 'DESC', 'DESCRIBE', 'DROP',
-            'ELSE', 'END', 'ENGINE', 'ESCAPE', 'EXISTS', 'FILE', 'FLOAT',
-            'FOR', 'FOREIGN KEY', 'FORMAT', 'FROM', 'FULL', 'FUNCTION',
-            'GRANT', 'GROUP BY', 'HAVING', 'HOST', 'IDENTIFIED', 'IN',
-            'INCREMENT', 'INDEX', 'INT', 'INTEGER',
-            'INTERVAL', 'INTO', 'IS', 'JOIN', 'KEY', 'LEFT', 'LEVEL',
-            'LIKE', 'LIMIT', 'LOCK', 'LOGS', 'LONG', 'MASTER',
-            'MEDIUMINT', 'MODE', 'MODIFY', 'NOT', 'NULL', 'NUMBER',
-            'OFFSET', 'ON', 'OPTION', 'OR', 'ORDER BY', 'OUTER', 'OWNER',
-            'PASSWORD', 'PORT', 'PRIMARY', 'PRIVILEGES', 'PROCESSLIST',
-            'PURGE', 'REFERENCES', 'REGEXP', 'RENAME', 'REPAIR', 'RESET',
-            'REVOKE', 'RIGHT', 'ROLLBACK', 'ROW', 'ROWS', 'ROW_FORMAT',
-            'SAVEPOINT', 'SELECT', 'SESSION', 'SET', 'SHARE', 'SHOW',
-            'SLAVE', 'SMALLINT', 'SMALLINT', 'START', 'STOP', 'TABLES',
-            'THEN', 'TINYINT', 'TO', 'TRANSACTION', 'TRIGGER', 'TRUNCATE',
-            'UNION', 'UNIQUE', 'UNSIGNED', 'UPDATE', 'USE', 'USER',
-            'USING', 'VALUES', 'VARCHAR', 'VIEW', 'WHEN', 'WHERE', 'WITH']
-
-FUNCTIONS = ['AVG', 'CONCAT', 'COUNT', 'DISTINCT', 'FIRST', 'FORMAT',
-             'FROM_UNIXTIME', 'LAST', 'LCASE', 'LEN', 'MAX', 'MID',
-             'MIN', 'NOW', 'ROUND', 'SUM', 'TOP', 'UCASE', 'UNIX_TIMESTAMP']
-
 
 class ESCli:
 
@@ -95,16 +68,20 @@ class ESCli:
         self.cli_style = config["colors"]
         self.table_format = config["main"]["table_format"]
 
+        self.multiline_continuation_char = config["main"]["multiline_continuation_char"]
+        self.multi_line = True
+        self.multiline_mode = "escli"
+
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
     def _build_cli(self):
 
-        self.multiline_continuation_char = '.'
-        self.multi_line = True
-        self.multiline_mode = 'escli'
-
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
-        sql_completer = WordCompleter(KEYWORDS + FUNCTIONS + self.esexecute.indices_list, ignore_case=True)
+        keywords_list = get_literals("keywords")
+        functions_list = get_literals("functions")
+        indices_list = self.esexecute.indices_list
+
+        sql_completer = WordCompleter(keywords_list + functions_list + indices_list, ignore_case=True)
 
         def get_continuation(width, line_number, is_soft_wrap):
             continuation = self.multiline_continuation_char * (width - 1) + " "
@@ -114,7 +91,7 @@ class ESCli:
             lexer=PygmentsLexer(SqlLexer),
             completer=sql_completer,
             complete_while_typing=True,
-            # completer=DynamicCompleter(lambda: self.completer),
+            # TODO: add history, refer to pgcli approach
             # history=history,
             style=style_factory(self.syntax_style, self.cli_style),
             prompt_continuation=get_continuation,
@@ -144,7 +121,7 @@ class ESCli:
         banner = pyfiglet.figlet_format("Open Distro", font="slant")
         print(banner)
 
-        # print meta info
+        # print info on the welcome page
         print("Server: Open Distro for ES %s" % self.esexecute.es_version)
         print("Version: %s" % __version__)
         print("Endpoint: %s" % self.esexecute.endpoint)
@@ -160,14 +137,13 @@ class ESCli:
             try:
                 data = self.esexecute.execute_query(text)
                 if data:
-
                     output = format_output(data, settings)
                     self.echo_via_pager('\n'.join(output))
 
             except Exception as e:
                 print(repr(e))
 
-        print('Good Elastic Bye!')
+        print('X-Pack sucks!')
 
     def is_too_wide(self, line):
         """Will this line be too wide to fit into terminal?"""
@@ -271,14 +247,16 @@ def cli(
     else:
         http_auth = None
 
+    # TODO add validation for endpoint to avoid the cost of connecting to some obviously invalid endpoint
+
     # handle single query without more interaction with user
     if query:
         try:
-            esexecutor = ESExecute(endpoint, http_auth)
+            es_executor = ESExecute(endpoint, http_auth)
             if explain:
-                res = esexecutor.execute_query(query, explain=True)
+                res = es_executor.execute_query(query, explain=True)
             else:
-                res = esexecutor.execute_query(query, output_format=result_format)
+                res = es_executor.execute_query(query, output_format=result_format)
                 if res and result_format == 'jdbc':
                     settings = OutputSettings(table_format='psql', is_vertical=is_vertical)
                     res = format_output(res, settings)
@@ -297,10 +275,9 @@ def cli(
 
 
 def format_output(data, settings):
+
     table_format = "vertical" if settings.is_vertical else settings.table_format
-
     formatter = TabularOutputFormatter(format_name=table_format)
-
     max_width = settings.max_width
 
     # parse response data
@@ -339,7 +316,7 @@ def format_output(data, settings):
         "style": settings.style_output
     }
 
-    # get header and type as lists, not sure if we need this info
+    # get header and type as lists, for future usage
     for i in schema:
         fields.append(i['name'])
         types.append(i['type'])
@@ -361,7 +338,7 @@ def format_output(data, settings):
             output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
             output = itertools.chain([fraction_message], output)
 
-    # TODO: Add row limit. Refer to pgcli -> main -> line 866
+    # TODO: if decided to add row_limit. Refer to pgcli -> main -> line 866.
 
     return output
 

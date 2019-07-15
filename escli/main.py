@@ -55,7 +55,8 @@ class ESCli:
 
     def __init__(self,
                  esclirc_file=None,
-                 esexecute=None):
+                 esexecute=None,
+                 always_use_pager=False):
 
         # Load config file
         config = self.config = get_config(esclirc_file)
@@ -63,6 +64,7 @@ class ESCli:
         self.prompt_app = None
 
         self.esexecute = esexecute
+        self.always_use_pager = always_use_pager
 
         self.syntax_style = config["main"]["syntax_style"]
         self.cli_style = config["colors"]
@@ -162,8 +164,10 @@ class ESCli:
 
     def echo_via_pager(self, text, color=None):
         lines = text.split("\n")
+        if self.always_use_pager:
+            click.echo_via_pager(text, color=color)
 
-        if self.is_too_tall(lines) or any(self.is_too_wide(l) for l in lines):
+        elif self.is_too_tall(lines) or any(self.is_too_wide(l) for l in lines):
             click.echo_via_pager(text, color=color)
         else:
             click.echo(text, color=color)
@@ -215,7 +219,7 @@ class ESCli:
     "is_vertical",
     is_flag=True,
     default=False,
-    help="Convert output from horizontal to vertical",
+    help="Convert output from horizontal to vertical. Only used for single query not getting into console",
 )
 @click.option(
     "-U",
@@ -227,6 +231,15 @@ class ESCli:
     "--password",
     help="password of the username",
 )
+@click.option(
+    "-p",
+    "--pager",
+    "always_use_pager",
+    is_flag=True,
+    default=False,
+    help="Always use pager to display output. If not specified, smart pager mode will be used according to the \
+         length/width of output",
+)
 def cli(
         endpoint,
         query,
@@ -236,6 +249,7 @@ def cli(
         is_vertical,
         username,
         password,
+        always_use_pager
 ):
     """
     Provide endpoint for Elasticsearch connection.
@@ -269,7 +283,7 @@ def cli(
             click.echo(e)
             sys.exit(0)
 
-    escli = ESCli(esclirc_file=esclirc)
+    escli = ESCli(esclirc_file=esclirc, always_use_pager=always_use_pager)
     escli.connect(endpoint, http_auth)
     escli.run_cli()
 

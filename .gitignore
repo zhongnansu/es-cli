@@ -70,3 +70,4 @@ target/
 .vscode/
 venv/
 
+.DS_Store

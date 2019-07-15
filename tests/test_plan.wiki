@@ -18,7 +18,7 @@
     * [done] Test config.
 
 
-    == Nested commands with params ==
+    == Nested commands with params == (Behave)
     * [ ] Test write result to a file.
     * [ ] Test explain param
     * [ ] Test query and format param
@@ -35,4 +35,4 @@
 
 
     == Cross-Platform availability ==
-    * [ ] Manually test on Linux, Windows and mac-os.
+    * [Done] Manually test on Linux, Windows and mac-os.

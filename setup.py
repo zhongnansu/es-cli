@@ -27,10 +27,10 @@ setup(
     author="Zhongnan",
     author_email="zhongnan.su@outlook.com",
     version=version,
-    license="BSD",
+    license="Apache 2.0",
     url="https://opendistro.github.io/for-elasticsearch-docs/",
     packages=find_packages(),
-    package_data={"escli": ["esclirc"]},
+    package_data={"escli": ["esclirc", "esliterals/esliterals.json"]},
     description=description,
     install_requires=install_requirements,
     entry_points="""
@@ -39,7 +39,7 @@ setup(
     """,
     classifiers=[
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",

@@ -6,10 +6,12 @@ import sys
 import re
 import itertools
 import pyfiglet
+import os
 
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.enums import DEFAULT_BUFFER
 from prompt_toolkit.shortcuts import PromptSession
+from prompt_toolkit.history import FileHistory
 from prompt_toolkit.filters import HasFocus, IsDone
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.layout.processors import (
@@ -76,7 +78,9 @@ class ESCli:
 
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
-    def _build_cli(self):
+        # self.query_history = []
+
+    def _build_cli(self, history):
 
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
         keywords_list = get_literals("keywords")
@@ -94,7 +98,7 @@ class ESCli:
             completer=sql_completer,
             complete_while_typing=True,
             # TODO: add history, refer to pgcli approach
-            # history=history,
+            history=history,
             style=style_factory(self.syntax_style, self.cli_style),
             prompt_continuation=get_continuation,
             multiline=es_is_multiline(self),
@@ -111,7 +115,12 @@ class ESCli:
 
     def run_cli(self):
 
-        self.prompt_app = self._build_cli()
+        history_file = self.config["main"]["history_file"]
+        if history_file == "default":
+            history_file = config_location() + "history"
+        history = FileHistory(os.path.expanduser(history_file))
+
+        self.prompt_app = self._build_cli(history)
 
         settings = OutputSettings(
             max_width=self.prompt_app.output.get_size().columns,

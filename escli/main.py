@@ -145,7 +145,7 @@ class ESCli:
             except Exception as e:
                 print(repr(e))
 
-        print('X-Pack sucks!')
+        print('See You Next Search')
 
     def is_too_wide(self, line):
         """Will this line be too wide to fit into terminal?"""
@@ -202,7 +202,7 @@ class ESCli:
     "--esclirc",
     default=config_location() + "config",
     envvar="ESCLIRC",
-    help="Location of esclirc file.",
+    help="Location of config file.",
     type=click.Path(dir_okay=False),
 )
 @click.option(

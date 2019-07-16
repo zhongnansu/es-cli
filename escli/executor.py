@@ -24,7 +24,7 @@ class ESExecute:
 
         self.conn = None
         self.es_version = None
-        self.get_connection(endpoint, http_auth)
+        self.set_connection(endpoint, http_auth)
         self.indices_list = self.get_indices()
         self.endpoint = endpoint
 
@@ -35,7 +35,7 @@ class ESExecute:
 
         return list(res)
 
-    def get_connection(self, endpoint, http_auth=None):
+    def set_connection(self, endpoint, http_auth=None):
 
         urllib3.disable_warnings()
         logging.captureWarnings(True)
@@ -96,7 +96,7 @@ class ESExecute:
 
         try:
             click.secho("Reconnecting...", fg="green")
-            self.get_connection(endpoint)
+            self.set_connection(endpoint)
             click.secho("Reconnected! Please run query again", fg="green")
 
         except ConnectionFailException as e:

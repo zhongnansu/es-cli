@@ -60,10 +60,3 @@ def get_config(esclirc_file=None):
     write_default_config(default_config, esclirc_file)
 
     return load_config(esclirc_file, default_config)
-
-
-def get_casing_file(config):
-    casing_file = config["main"]["casing_file"]
-    if casing_file == "default":
-        casing_file = config_location() + "casing"
-    return casing_file

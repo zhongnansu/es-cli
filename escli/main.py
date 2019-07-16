@@ -145,7 +145,7 @@ class ESCli:
             except Exception as e:
                 print(repr(e))
 
-        print('X-Pack sucks!')
+        print('See you next search!')
 
     def is_too_wide(self, line):
         """Will this line be too wide to fit into terminal?"""

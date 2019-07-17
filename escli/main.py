@@ -1,12 +1,14 @@
 from __future__ import unicode_literals
-from .__init__ import __version__
 
 import click
-import sys
-import re
 import itertools
+import re
 import pyfiglet
+import sys
 
+from cli_helpers.tabular_output import TabularOutputFormatter
+from cli_helpers.tabular_output.preprocessors import format_numbers
+from collections import namedtuple
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.enums import DEFAULT_BUFFER
 from prompt_toolkit.shortcuts import PromptSession
@@ -17,20 +19,18 @@ from prompt_toolkit.layout.processors import (
     HighlightMatchingBracketProcessor,
 )
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from pygments.lexers.sql import SqlLexer
+
 from .config import (
     config_location,
     get_config,
 )
-
-from collections import namedtuple
-from pygments.lexers.sql import SqlLexer
 from .executor import ESExecute, ConnectionFailException
-from cli_helpers.tabular_output import TabularOutputFormatter
-from cli_helpers.tabular_output.preprocessors import format_numbers
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
 from .encodingutils import text_type
 from .esliterals.main import get_literals
+from .__init__ import __version__
 
 # Ref: https://stackoverflow.com/questions/30425105/filter-special-chars-such-as-color-codes-from-shell-output
 COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")

@@ -1,6 +1,7 @@
-from setuptools import setup, find_packages
 import re
 import ast
+
+from setuptools import setup, find_packages
 
 install_requirements = [
     "click >= 4.1",
@@ -20,7 +21,8 @@ with open("escli/__init__.py", "rb") as f:
         ast.literal_eval(_version_re.search(f.read().decode("utf-8")).group(1))
     )
 
-description = "CLI for Elasticsearch Open Distro SQL. With auto-completion and syntax highlighting."
+description = "CLI for Elasticsearch Open Distro SQL. " \
+              "With auto-completion and syntax highlighting."
 
 setup(
     name="escli",

@@ -1,12 +1,14 @@
+import boto3
+import click
+import logging
+import ssl
+import urllib3
+
+
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import ConnectionError, RequestError
-import click
 from elasticsearch.connection import create_ssl_context
-import ssl
 from requests_aws4auth import AWS4Auth
-import boto3
-import urllib3
-import logging
 
 
 class ConnectionFailException(Exception):

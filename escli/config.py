@@ -1,7 +1,8 @@
 import errno
-import shutil
 import os
 import platform
+import shutil
+
 from os.path import expanduser, exists, dirname
 from configobj import ConfigObj
 

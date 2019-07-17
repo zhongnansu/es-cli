@@ -4,11 +4,12 @@ import logging
 import ssl
 import urllib3
 
-
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import ConnectionError, RequestError
 from elasticsearch.connection import create_ssl_context
 from requests_aws4auth import AWS4Auth
+
+from .encodingutils import unicode2utf8
 
 
 class ConnectionFailException(Exception):
@@ -16,13 +17,7 @@ class ConnectionFailException(Exception):
 
 
 class ESExecute:
-
-    def __init__(
-            self,
-            endpoint=None,
-            http_auth=None,
-
-    ):
+    def __init__(self, endpoint=None, http_auth=None):
 
         self.conn = None
         self.es_version = None
@@ -43,19 +38,21 @@ class ESExecute:
         logging.captureWarnings(True)
 
         def get_aes_client():
-            service = 'es'
+            service = "es"
             session = boto3.Session()
 
             credentials = session.get_credentials()
             region = session.region_name
-            awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service)
+            awsauth = AWS4Auth(
+                credentials.access_key, credentials.secret_key, region, service
+            )
 
             aes_client = Elasticsearch(
-                hosts=[{'host': str(endpoint), 'port': 443}],
+                hosts=[{"host": str(endpoint), "port": 443}],
                 http_auth=awsauth,
                 use_ssl=True,
                 verify_certs=True,
-                connection_class=RequestsHttpConnection
+                connection_class=RequestsHttpConnection,
             )
 
             return aes_client
@@ -65,18 +62,19 @@ class ESExecute:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
 
-            od_client = Elasticsearch([endpoint],
-                                      http_auth=http_auth,
-                                      verify_certs=False,
-                                      ssl_context=ssl_context,
-                                      )
+            od_client = Elasticsearch(
+                [endpoint],
+                http_auth=http_auth,
+                verify_certs=False,
+                ssl_context=ssl_context,
+            )
 
             return od_client
 
         if http_auth:
             es = get_od_client()
 
-        elif str(endpoint).endswith('es.amazonaws.com'):
+        elif str(endpoint).endswith("es.amazonaws.com"):
             es = get_aes_client()
 
         else:
@@ -85,16 +83,17 @@ class ESExecute:
         # check connection
         if es.ping():
             info = es.info()
-            es_version = info['version']['number']
+            es_version = info["version"]["number"]
 
             self.conn = es
             self.es_version = es_version
 
         else:
-            raise ConnectionFailException('Can not connect to endpoint: ' + endpoint)
+            raise ConnectionFailException("Can not connect to endpoint: " + endpoint)
 
-    def _handle_server_closed_connection(self, endpoint):
+    def _handle_server_closed_connection(self):
         """Used during CLI execution."""
+        endpoint = self.endpoint
 
         try:
             click.secho("Reconnecting...", fg="green")
@@ -105,33 +104,45 @@ class ESExecute:
             click.secho("Connection Failed", fg="red")
             click.secho(str(e), err=True, fg="red")
 
-    def execute_query(self, query, output_format='jdbc', explain=False):
+    def _error_printer(self, error):
+        """Used to print RequestError."""
+        error_message_dict = error.info["error"]
+        main_error_message = dict(
+            [(unicode2utf8(k), unicode2utf8(v)) for k, v in error_message_dict.items()]
+        )
+
+        click.secho(message=str(main_error_message), fg="red")
+
+    def execute_query(self, query, output_format="jdbc", explain=False):
         # deal with input
-        final_query = query.strip().strip(';')
+        final_query = query.strip().strip(";")
         es = self.conn
 
         if explain:
             try:
-                data = es.transport.perform_request(url="/_opendistro/_sql/_explain", method="POST",
-                                                    body={
-                                                        'query': final_query
-                                                    })
+                data = es.transport.perform_request(
+                    url="/_opendistro/_sql/_explain",
+                    method="POST",
+                    body={"query": final_query},
+                )
                 return data
 
             except RequestError as e:
-                click.secho(message=str(e.info['error']), fg='red')
+                self._error_printer(e)
+
         else:
             try:
-                data = es.transport.perform_request(url="/_opendistro/_sql/", method="POST",
-                                                    params={'format': output_format},
-                                                    body={
-                                                        'query': final_query
-                                                    })
+                data = es.transport.perform_request(
+                    url="/_opendistro/_sql/",
+                    method="POST",
+                    params={"format": output_format},
+                    body={"query": final_query},
+                )
                 return data
 
             # lost connection during execution
             except ConnectionError:
-                self._handle_server_closed_connection(self.endpoint)
+                self._handle_server_closed_connection()
 
             except RequestError as e:
-                click.secho(message=str(e.info['error']), fg='red')
+                self._error_printer(e)

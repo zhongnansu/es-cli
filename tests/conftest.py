@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from tests.utils import (
+from utils import (
     create_index,
     delete_index,
     get_connection,

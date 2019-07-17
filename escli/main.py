@@ -21,10 +21,7 @@ from prompt_toolkit.layout.processors import (
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from pygments.lexers.sql import SqlLexer
 
-from .config import (
-    config_location,
-    get_config,
-)
+from .config import config_location, get_config
 from .executor import ESExecute, ConnectionFailException
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
@@ -38,25 +35,14 @@ COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
 click.disable_unicode_literals_warning = True
 
 OutputSettings = namedtuple(
-    "OutputSettings",
-    "table_format is_vertical max_width style_output missingval",
+    "OutputSettings", "table_format is_vertical max_width style_output missingval"
 )
 
-OutputSettings.__new__.__defaults__ = (
-    None,
-    False,
-    sys.maxsize,
-    None,
-    "null",
-)
+OutputSettings.__new__.__defaults__ = (None, False, sys.maxsize, None, "null")
 
 
 class ESCli:
-
-    def __init__(self,
-                 esclirc_file=None,
-                 esexecute=None,
-                 always_use_pager=False):
+    def __init__(self, esclirc_file=None, esexecute=None, always_use_pager=False):
 
         # Load config file
         config = self.config = get_config(esclirc_file)
@@ -83,7 +69,9 @@ class ESCli:
         functions_list = get_literals("functions")
         indices_list = self.esexecute.indices_list
 
-        sql_completer = WordCompleter(keywords_list + functions_list + indices_list, ignore_case=True)
+        sql_completer = WordCompleter(
+            keywords_list + functions_list + indices_list, ignore_case=True
+        )
 
         def get_continuation(width, line_number, is_soft_wrap):
             continuation = self.multiline_continuation_char * (width - 1) + " "
@@ -99,12 +87,13 @@ class ESCli:
             prompt_continuation=get_continuation,
             multiline=es_is_multiline(self),
             auto_suggest=AutoSuggestFromHistory(),
-            input_processors=[ConditionalProcessor(
-                processor=HighlightMatchingBracketProcessor(
-                    chars='[](){}'),
-                filter=HasFocus(DEFAULT_BUFFER) & ~IsDone()
-            )],
-            tempfile_suffix='.sql',
+            input_processors=[
+                ConditionalProcessor(
+                    processor=HighlightMatchingBracketProcessor(chars="[](){}"),
+                    filter=HasFocus(DEFAULT_BUFFER) & ~IsDone(),
+                )
+            ],
+            tempfile_suffix=".sql",
         )
 
         return prompt_app
@@ -130,7 +119,7 @@ class ESCli:
 
         while True:
             try:
-                text = self.prompt_app.prompt(message='escli' + '> ')
+                text = self.prompt_app.prompt(message="escli" + "> ")
             except KeyboardInterrupt:
                 continue  # Control-C pressed. Try again.
             except EOFError:
@@ -140,20 +129,20 @@ class ESCli:
                 data = self.esexecute.execute_query(text)
                 if data:
                     output = format_output(data, settings)
-                    self.echo_via_pager('\n'.join(output))
+                    self.echo_via_pager("\n".join(output))
 
             except Exception as e:
                 print(repr(e))
 
-        print('See you next search!')
+        print("See you next search!")
 
     def is_too_wide(self, line):
         """Will this line be too wide to fit into terminal?"""
         if not self.prompt_app:
             return False
         return (
-                len(COLOR_CODE_REGEX.sub("", line))
-                > self.prompt_app.output.get_size().columns
+            len(COLOR_CODE_REGEX.sub("", line))
+            > self.prompt_app.output.get_size().columns
         )
 
     def is_too_tall(self, lines):
@@ -183,7 +172,7 @@ class ESCli:
 
 
 @click.command()
-@click.argument('endpoint', default="http://localhost:9200")
+@click.argument("endpoint", default="http://localhost:9200")
 @click.option(
     "-q",
     "--query",
@@ -191,13 +180,7 @@ class ESCli:
     type=click.STRING,
     help="Run single query without getting in to the console",
 )
-@click.option(
-    "-e",
-    "--explain",
-    "explain",
-    is_flag=True,
-    help="Explain sql to DSL",
-)
+@click.option("-e", "--explain", "explain", is_flag=True, help="Explain sql to DSL")
 @click.option(
     "--esclirc",
     default=config_location() + "config",
@@ -221,16 +204,8 @@ class ESCli:
     default=False,
     help="Convert output from horizontal to vertical. Only used for single query not getting into console",
 )
-@click.option(
-    "-U",
-    "--username",
-    help="Username to connect to the Elasticsearch",
-)
-@click.option(
-    "-W",
-    "--password",
-    help="password of the username",
-)
+@click.option("-U", "--username", help="Username to connect to the Elasticsearch")
+@click.option("-W", "--password", help="password of the username")
 @click.option(
     "-p",
     "--pager",
@@ -241,15 +216,15 @@ class ESCli:
          length/width of output",
 )
 def cli(
-        endpoint,
-        query,
-        explain,
-        esclirc,
-        result_format,
-        is_vertical,
-        username,
-        password,
-        always_use_pager
+    endpoint,
+    query,
+    explain,
+    esclirc,
+    result_format,
+    is_vertical,
+    username,
+    password,
+    always_use_pager,
 ):
     """
     Provide endpoint for Elasticsearch connection.
@@ -271,10 +246,12 @@ def cli(
                 res = es_executor.execute_query(query, explain=True)
             else:
                 res = es_executor.execute_query(query, output_format=result_format)
-                if res and result_format == 'jdbc':
-                    settings = OutputSettings(table_format='psql', is_vertical=is_vertical)
+                if res and result_format == "jdbc":
+                    settings = OutputSettings(
+                        table_format="psql", is_vertical=is_vertical
+                    )
                     res = format_output(res, settings)
-                    res = '\n'.join(res)
+                    res = "\n".join(res)
 
             click.echo(res)
             sys.exit(0)
@@ -295,10 +272,10 @@ def format_output(data, settings):
     max_width = settings.max_width
 
     # parse response data
-    datarows = data['datarows']
-    schema = data['schema']
-    total_hits = data['total']
-    cur_size = data['size']
+    datarows = data["datarows"]
+    schema = data["schema"]
+    total_hits = data["total"]
+    cur_size = data["size"]
 
     fields = []
     types = []
@@ -327,20 +304,22 @@ def format_output(data, settings):
         "preprocessors": (format_numbers, format_arrays),
         "disable_numparse": True,
         "preserve_whitespace": True,
-        "style": settings.style_output
+        "style": settings.style_output,
     }
 
     # get header and type as lists, for future usage
     for i in schema:
-        fields.append(i['name'])
-        types.append(i['type'])
+        fields.append(i["name"])
+        types.append(i["type"])
 
     output = formatter.format_output(datarows, fields, **output_kwargs)
 
-    fraction_message = 'data retrieved / total hits = %d/%d' % (cur_size, total_hits)
+    fraction_message = "data retrieved / total hits = %d/%d" % (cur_size, total_hits)
 
     if total_hits > 200:
-        fraction_message += '\n' + 'USE LIMIT in your query to retrieve more than 200 lines of data'
+        fraction_message += (
+            "\n" + "USE LIMIT in your query to retrieve more than 200 lines of data"
+        )
 
     # check width overflow, change format_name for better visual effect
     first_line = next(output)
@@ -348,8 +327,12 @@ def format_output(data, settings):
 
     if len(first_line) > max_width:
         click.secho(message="Output longer than terminal width", fg="red")
-        if click.confirm("Do you want to display data vertically for better visual effect?"):
-            output = formatter.format_output(datarows, fields, format_name='vertical', **output_kwargs)
+        if click.confirm(
+            "Do you want to display data vertically for better visual effect?"
+        ):
+            output = formatter.format_output(
+                datarows, fields, format_name="vertical", **output_kwargs
+            )
             output = itertools.chain([fraction_message], output)
 
     # TODO: if decided to add row_limit. Refer to pgcli -> main -> line 866.

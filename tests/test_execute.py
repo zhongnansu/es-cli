@@ -2,7 +2,7 @@ import pytest
 import mock
 from textwrap import dedent
 
-from tests.utils import (
+from utils import (
     estest,
     load_data,
     run,

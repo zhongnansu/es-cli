@@ -1,6 +1,7 @@
 import pytest
 import mock
 from textwrap import dedent
+from elasticsearch.exceptions import ConnectionError
 
 from utils import (
     estest,
@@ -9,7 +10,8 @@ from utils import (
     TEST_INDEX_NAME,
 )
 
-from escli.executor import ESExecute, ConnectionFailException
+from escli.executor import ESExecute
+
 
 
 @estest
@@ -56,10 +58,9 @@ def test_connection_fail_exception():
 
     invalid_endpoint = 'http://invalid:9200'
 
-    with pytest.raises(ConnectionFailException) as e:
+    with pytest.raises(ConnectionError) as e:
         assert ESExecute(endpoint=invalid_endpoint)
 
-    assert str(e.value) == 'Can not connect to endpoint: %s' % invalid_endpoint
 
 
 

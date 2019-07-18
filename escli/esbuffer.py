@@ -6,6 +6,13 @@ from prompt_toolkit.application import get_app
 
 
 def es_is_multiline(escli):
+    """
+    Return boolean to enable/unable multiline mode
+
+    If return True, use multiline to get user input.
+    If return False, stop user from giving more input, handle user request.
+    """
+
     @Condition
     def cond():
         doc = get_app().layout.get_buffer_by_name(DEFAULT_BUFFER).document

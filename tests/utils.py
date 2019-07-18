@@ -1,8 +1,8 @@
-from elasticsearch import Elasticsearch, helpers, ConnectionPool
+from elasticsearch import ConnectionError, helpers, ConnectionPool
 import json
 import pytest
 import sys
-from escli.executor import ESExecute, ConnectionFailException
+from escli.executor import ESExecute
 from escli.main import OutputSettings, format_output
 
 TEST_INDEX_NAME = 'escli_test'
@@ -54,7 +54,7 @@ try:
     conn = get_connection()
     CAN_CONNECT_TO_ES = True
 
-except ConnectionFailException:
+except ConnectionError:
     CAN_CONNECT_TO_ES = False
 
 

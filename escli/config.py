@@ -8,6 +8,7 @@ from configobj import ConfigObj
 
 
 def config_location():
+    """Return absolute config file path according to different OS."""
     if "XDG_CONFIG_HOME" in os.environ:
         return "%s/escli/" % expanduser(os.environ["XDG_CONFIG_HOME"])
     elif platform.system() == "Windows":
@@ -16,16 +17,23 @@ def config_location():
         return expanduser("~/.config/escli/")
 
 
-def load_config(usr_cfg, def_cfg=None):
-    cfg = ConfigObj()
-    cfg.merge(ConfigObj(def_cfg, interpolation=False))
-    cfg.merge(ConfigObj(expanduser(usr_cfg), interpolation=False, encoding="utf-8"))
-    cfg.filename = expanduser(usr_cfg)
+def _load_config(user_config, default_config=None):
+    config = ConfigObj()
+    config.merge(ConfigObj(default_config, interpolation=False))
+    config.merge(
+        ConfigObj(expanduser(user_config), interpolation=False, encoding="utf-8")
+    )
+    config.filename = expanduser(user_config)
 
-    return cfg
+    return config
 
 
 def ensure_dir_exists(path):
+    """
+    Try to Create config file in OS.
+
+    Raise error if file already exists.
+    """
     parent_dir = expanduser(dirname(path))
     try:
         os.makedirs(parent_dir)
@@ -35,7 +43,7 @@ def ensure_dir_exists(path):
             raise
 
 
-def write_default_config(source, destination, overwrite=False):
+def _write_default_config(source, destination, overwrite=False):
     destination = expanduser(destination)
     if not overwrite and exists(destination):
         return
@@ -46,6 +54,12 @@ def write_default_config(source, destination, overwrite=False):
 
 
 def get_config(esclirc_file=None):
+    """
+    Get config for escli.
+
+    This config comes from either existing config in the OS, or create a config file in the OS, and write default config
+    including in the package to it.
+    """
     from escli import __file__ as package_root
 
     package_root = os.path.dirname(package_root)
@@ -53,6 +67,6 @@ def get_config(esclirc_file=None):
     esclirc_file = esclirc_file or "%sconfig" % config_location()
 
     default_config = os.path.join(package_root, "esclirc")
-    write_default_config(default_config, esclirc_file)
+    _write_default_config(default_config, esclirc_file)
 
-    return load_config(esclirc_file, default_config)
+    return _load_config(esclirc_file, default_config)

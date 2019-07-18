@@ -20,9 +20,10 @@ from prompt_toolkit.layout.processors import (
 )
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from pygments.lexers.sql import SqlLexer
+from elasticsearch.exceptions import ConnectionError
 
 from .config import config_location, get_config
-from .executor import ESExecute, ConnectionFailException
+from .executor import ESExecute
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
 from .encodingutils import text_type
@@ -42,28 +43,25 @@ OutputSettings.__new__.__defaults__ = (None, False, sys.maxsize, None, "null")
 
 
 class ESCli:
-    def __init__(self, esclirc_file=None, esexecute=None, always_use_pager=False):
+    """ESCli instance is used to build and run the ES SQL CLI."""
 
+    def __init__(self, esclirc_file=None, esexecute=None, always_use_pager=False):
         # Load config file
         config = self.config = get_config(esclirc_file)
 
         self.prompt_app = None
-
         self.esexecute = esexecute
         self.always_use_pager = always_use_pager
-
         self.syntax_style = config["main"]["syntax_style"]
         self.cli_style = config["colors"]
         self.table_format = config["main"]["table_format"]
-
         self.multiline_continuation_char = config["main"]["multiline_continuation_char"]
-        self.multi_line = True
-        self.multiline_mode = "escli"
-
+        self.multi_line = config["main"].as_bool("multi_line")
+        self.multiline_mode = config["main"].get("multi_line_mode", "escli")
+        self.null_string = config["main"].get("null_string", "null")
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
     def _build_cli(self):
-
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
         keywords_list = get_literals("keywords")
         functions_list = get_literals("functions")
@@ -99,13 +97,18 @@ class ESCli:
         return prompt_app
 
     def run_cli(self):
+        """
+        Print welcome page, goodbye message.
 
+        Run the CLI and keep listening to user's input.
+        """
         self.prompt_app = self._build_cli()
 
         settings = OutputSettings(
             max_width=self.prompt_app.output.get_size().columns,
             style_output=self.style_output,
             table_format=self.table_format,
+            missingval=self.null_string,
         )
 
         # print Banner
@@ -162,12 +165,12 @@ class ESCli:
             click.echo(text, color=color)
 
     def connect(self, endpoint, http_auth=None):
-
         try:
             self.esexecute = ESExecute(endpoint, http_auth)
 
-        except ConnectionFailException as e:
-            click.echo(e)
+        except ConnectionError as e:
+            click.secho("Can not connect to endpoint %s" % endpoint, fg="red")
+            click.echo(repr(e))
             sys.exit(0)
 
 
@@ -228,7 +231,7 @@ def cli(
 ):
     """
     Provide endpoint for Elasticsearch connection.
-    By default, it uses http://localhost:9200 to connect
+    By default, it uses http://localhost:9200 to connect.
     """
 
     if username and password:
@@ -256,8 +259,9 @@ def cli(
             click.echo(res)
             sys.exit(0)
 
-        except ConnectionFailException as e:
-            click.echo(e)
+        except ConnectionError as e:
+            click.secho("Can not connect to endpoint %s" % endpoint, fg="red")
+            click.echo(repr(e))
             sys.exit(0)
 
     escli = ESCli(esclirc_file=esclirc, always_use_pager=always_use_pager)
@@ -266,7 +270,12 @@ def cli(
 
 
 def format_output(data, settings):
+    """
 
+    :param data:
+    :param settings:
+    :return:
+    """
     table_format = "vertical" if settings.is_vertical else settings.table_format
     formatter = TabularOutputFormatter(format_name=table_format)
     max_width = settings.max_width

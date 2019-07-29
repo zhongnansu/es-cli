@@ -8,13 +8,13 @@ from configobj import ConfigObj
 
 
 def config_location():
-    """Return absolute config file path according to different OS."""
+    """Return absolute conf file path according to different OS."""
     if "XDG_CONFIG_HOME" in os.environ:
         return "%s/escli/" % expanduser(os.environ["XDG_CONFIG_HOME"])
     elif platform.system() == "Windows":
         return os.getenv("USERPROFILE") + "\\AppData\\Local\\dbcli\\escli\\"
     else:
-        return expanduser("~/.config/escli/")
+        return expanduser("~/.conf/escli/")
 
 
 def _load_config(user_config, default_config=None):
@@ -30,7 +30,7 @@ def _load_config(user_config, default_config=None):
 
 def ensure_dir_exists(path):
     """
-    Try to Create config file in OS.
+    Try to Create conf file in OS.
 
     Raise error if file already exists.
     """
@@ -53,14 +53,15 @@ def _write_default_config(source, destination, overwrite=False):
     shutil.copyfile(source, destination)
 
 
+# https://stackoverflow.com/questions/40193112/python-setuptools-distribute-configuration-files-to-os-specific-directories
 def get_config(esclirc_file=None):
     """
-    Get config for escli.
+    Get conf for escli.
 
-    This config comes from either existing config in the OS, or create a config file in the OS, and write default config
+    This conf comes from either existing conf in the OS, or create a conf file in the OS, and write default conf
     including in the package to it.
     """
-    from escli import __file__ as package_root
+    from escli.conf import __file__ as package_root
 
     package_root = os.path.dirname(package_root)
 

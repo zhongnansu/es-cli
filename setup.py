@@ -31,7 +31,7 @@ setup(
     license="Apache 2.0",
     url="https://opendistro.github.io/for-elasticsearch-docs/",
     packages=find_packages(),
-    package_data={"escli": ["esclirc", "esliterals/esliterals.json"]},
+    package_data={"escli": ["conf/esclirc", "esliterals/esliterals.json"]},
     description=description,
     install_requires=install_requirements,
     entry_points="""

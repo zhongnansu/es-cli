@@ -15,13 +15,13 @@ multi_line = True
 multi_line_mode = escli
 
 # log_file location.
-# In Unix/Linux: ~/.config/escli/log
+# In Unix/Linux: ~/.conf/escli/log
 # In Windows: %USERPROFILE%\AppData\Local\dbcli\escli\log
 # %USERPROFILE% is typically C:\Users\{username}
 log_file = default
 
 # history_file location.
-# In Unix/Linux: ~/.config/escli/history
+# In Unix/Linux: ~/.conf/escli/history
 # In Windows: %USERPROFILE%\AppData\Local\dbcli\escli\history
 # %USERPROFILE% is typically C:\Users\{username}
 history_file = default

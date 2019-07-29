@@ -41,7 +41,7 @@ class ESExecute:
         urllib3.disable_warnings()
         logging.captureWarnings(True)
 
-        def _get_aes_client():
+        def get_aes_client():
             service = "es"
             session = boto3.Session()
 
@@ -61,7 +61,7 @@ class ESExecute:
 
             return aes_client
 
-        def _get_open_distro_client():
+        def get_open_distro_client():
             ssl_context = create_ssl_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
@@ -76,10 +76,10 @@ class ESExecute:
             return open_distro_client
 
         if http_auth:
-            es = _get_open_distro_client()
+            es = get_open_distro_client()
 
         elif str(endpoint).endswith("es.amazonaws.com"):
-            es = _get_aes_client()
+            es = get_aes_client()
 
         else:
             es = Elasticsearch([endpoint], verify_certs=True)
@@ -104,25 +104,26 @@ class ESExecute:
             click.secho("Reconnected! Please run query again", fg="green")
 
         except ConnectionError as e:
-            click.secho("Connection Failed", fg="red")
+            click.secho(
+                "Connection Failed. Check your ES is running and then come back",
+                fg="red",
+            )
             click.secho(str(e), err=True, fg="red")
 
-    def execute_query(self, query, output_format="jdbc", explain=False):
+    def execute_query(
+        self, query, output_format="jdbc", explain=False, use_console=True
+    ):
         """
         Handle user input, send SQL query and get response.
 
+        :param use_console: use console to interact with user, otherwise it's single query
         :param query: SQL query
         :param output_format: jdbc/raw/csv
         :param explain: if True, use _explain API.
         :return: raw http response
         """
-        # deal with input
-        # TODO: consider add evaluator/handler to filter obviously-invalid input,
-        #  to save cost of http connection.
-        final_query = query.strip().strip(";")
-        es = self.conn
 
-        def _error_printer(error):
+        def error_printer(error):
             """Used to print RequestError."""
             error_dict = error.info["error"]
             error_message = dict(
@@ -131,31 +132,25 @@ class ESExecute:
 
             click.secho(message=str(error_message), fg="red")
 
-        if explain:
-            try:
-                data = es.transport.perform_request(
-                    url="/_opendistro/_sql/_explain",
-                    method="POST",
-                    body={"query": final_query},
-                )
-                return data
+        # deal with input
+        # TODO: consider add evaluator/handler to filter obviously-invalid input,
+        #  to save cost of http connection.
+        final_query = query.strip().strip(";")
+        es = self.conn
 
-            except RequestError as e:
-                _error_printer(e)
+        try:
+            data = es.transport.perform_request(
+                url="/_opendistro/_sql/_explain" if explain else "/_opendistro/_sql/",
+                method="POST",
+                params=None if explain else {"format": output_format},
+                body={"query": final_query},
+            )
+            return data
 
-        else:
-            try:
-                data = es.transport.perform_request(
-                    url="/_opendistro/_sql/",
-                    method="POST",
-                    params={"format": output_format},
-                    body={"query": final_query},
-                )
-                return data
-
-            # connection lost during execution
-            except ConnectionError:
+        # handle connection lost during execution
+        except ConnectionError:
+            if use_console:
                 self._handle_server_closed_connection()
 
-            except RequestError as e:
-                _error_printer(e)
+        except RequestError as e:
+            error_printer(e)

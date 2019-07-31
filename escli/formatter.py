@@ -4,8 +4,6 @@ import itertools
 from cli_helpers.tabular_output import TabularOutputFormatter
 from cli_helpers.tabular_output.preprocessors import format_numbers
 
-from .encodingutils import text_type
-
 click.disable_unicode_literals_warning = True
 
 
@@ -25,7 +23,7 @@ class Formatter:
                 return self.settings.missingval
             if not isinstance(val, list):
                 return val
-            return "[" + ",".join(text_type(format_array(e)) for e in val) + "]"
+            return "[" + ",".join(str(format_array(e)) for e in val) + "]"
 
         def format_arrays(field_data, headers, **_):
             field_data = list(field_data)

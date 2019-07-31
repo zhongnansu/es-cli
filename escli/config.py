@@ -56,9 +56,9 @@ def _write_default_config(source, destination, overwrite=False):
 # https://stackoverflow.com/questions/40193112/python-setuptools-distribute-configuration-files-to-os-specific-directories
 def get_config(esclirc_file=None):
     """
-    Get conf for escli.
+    Get config for escli.
 
-    This conf comes from either existing conf in the OS, or create a conf file in the OS, and write default conf
+    This config comes from either existing conf in the OS, or create a conf file in the OS, and write default conf
     including in the package to it.
     """
     from escli.conf import __file__ as package_root
@@ -66,8 +66,8 @@ def get_config(esclirc_file=None):
     package_root = os.path.dirname(package_root)
 
     esclirc_file = esclirc_file or "%sconfig" % config_location()
-
     default_config = os.path.join(package_root, "esclirc")
+
     _write_default_config(default_config, esclirc_file)
 
     return _load_config(esclirc_file, default_config)

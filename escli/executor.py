@@ -2,6 +2,7 @@ import boto3
 import click
 import logging
 import ssl
+import sys
 import urllib3
 
 from elasticsearch import Elasticsearch, RequestsHttpConnection
@@ -9,106 +10,109 @@ from elasticsearch.exceptions import ConnectionError, RequestError
 from elasticsearch.connection import create_ssl_context
 from requests_aws4auth import AWS4Auth
 
-from .encodingutils import unicode2utf8
 
-
-class ESExecute:
-    """ESExecute instances are used to set up and maintain connection to Elasticsearch cluster,
+class ESExecutor:
+    """ESExecutor instances are used to set up and maintain connection to Elasticsearch cluster,
     as well as send user's SQL query to Elasticsearch.
     """
 
     def __init__(self, endpoint=None, http_auth=None):
-        """Initialize an ESExecute instance.
+        """Initialize an ESExecutor instance.
 
         Set up connection and get indices list.
 
         :param endpoint: an url in the format of "http:localhost:9200"
         :param http_auth: a tuple in the format of (username, password)
         """
-        self.conn = None
+        self.connection = None
         self.es_version = None
-        self._set_connection(endpoint, http_auth)
-        self.indices_list = self._get_indices()
+        self.indices_list = []
         self.endpoint = endpoint
+        self.http_auth = http_auth
 
-    def _get_indices(self):
-        client = self.conn
-        res = client.indices.get_alias().keys()
+    def get_indices(self):
+        if self.connection:
+            res = self.connection.indices.get_alias().keys()
+            self.indices_list = list(res)
 
-        return list(res)
+    def get_aes_client(self):
+        service = "es"
+        session = boto3.Session()
 
-    def _set_connection(self, endpoint, http_auth=None):
+        credentials = session.get_credentials()
+        region = session.region_name
+        awsauth = AWS4Auth(
+            credentials.access_key, credentials.secret_key, region, service
+        )
+
+        aes_client = Elasticsearch(
+            hosts=[{"host": str(self.endpoint), "port": 443}],
+            http_auth=awsauth,
+            use_ssl=True,
+            verify_certs=True,
+            connection_class=RequestsHttpConnection,
+        )
+
+        return aes_client
+
+    def get_open_distro_client(self):
+        ssl_context = create_ssl_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+        open_distro_client = Elasticsearch(
+            [self.endpoint],
+            http_auth=self.http_auth,
+            verify_certs=False,
+            ssl_context=ssl_context,
+        )
+
+        return open_distro_client
+
+    def set_connection(self, is_reconnect=False):
         urllib3.disable_warnings()
         logging.captureWarnings(True)
 
-        def get_aes_client():
-            service = "es"
-            session = boto3.Session()
+        if self.http_auth:
+            es = self.get_open_distro_client()
 
-            credentials = session.get_credentials()
-            region = session.region_name
-            awsauth = AWS4Auth(
-                credentials.access_key, credentials.secret_key, region, service
-            )
-
-            aes_client = Elasticsearch(
-                hosts=[{"host": str(endpoint), "port": 443}],
-                http_auth=awsauth,
-                use_ssl=True,
-                verify_certs=True,
-                connection_class=RequestsHttpConnection,
-            )
-
-            return aes_client
-
-        def get_open_distro_client():
-            ssl_context = create_ssl_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-
-            open_distro_client = Elasticsearch(
-                [endpoint],
-                http_auth=http_auth,
-                verify_certs=False,
-                ssl_context=ssl_context,
-            )
-
-            return open_distro_client
-
-        if http_auth:
-            es = get_open_distro_client()
-
-        elif str(endpoint).endswith("es.amazonaws.com"):
-            es = get_aes_client()
+        elif str(self.endpoint).endswith("es.amazonaws.com"):
+            es = self.get_aes_client()
 
         else:
-            es = Elasticsearch([endpoint], verify_certs=True)
+            es = Elasticsearch([self.endpoint], verify_certs=True)
 
-        # check connection
+        # check connection, es.info() may throw ConnectionError
         try:
             info = es.info()
             es_version = info["version"]["number"]
 
-            self.conn = es
+            self.connection = es
+            self.get_indices()
             self.es_version = es_version
-        except ConnectionError as err:
-            raise err
+
+        except ConnectionError as error:
+            if is_reconnect:
+                # re-throw error
+                raise error
+            else:
+                click.secho("Can not connect to endpoint %s" % self.endpoint, fg="red")
+                click.echo(repr(error))
+                sys.exit(0)
 
     def _handle_server_closed_connection(self):
         """Used during CLI execution."""
-        endpoint = self.endpoint
-
         try:
             click.secho("Reconnecting...", fg="green")
-            self._set_connection(endpoint)
+            self.set_connection(is_reconnect=True)
             click.secho("Reconnected! Please run query again", fg="green")
 
-        except ConnectionError as e:
+        except ConnectionError as reconnection_err:
             click.secho(
                 "Connection Failed. Check your ES is running and then come back",
                 fg="red",
             )
-            click.secho(str(e), err=True, fg="red")
+            click.secho(str(reconnection_err), err=True, fg="red")
 
     def execute_query(
         self, query, output_format="jdbc", explain=False, use_console=True
@@ -122,21 +126,11 @@ class ESExecute:
         :param explain: if True, use _explain API.
         :return: raw http response
         """
-
-        def error_printer(error):
-            """Used to print RequestError."""
-            error_dict = error.info["error"]
-            error_message = dict(
-                [(unicode2utf8(k), unicode2utf8(v)) for k, v in error_dict.items()]
-            )
-
-            click.secho(message=str(error_message), fg="red")
-
         # deal with input
         # TODO: consider add evaluator/handler to filter obviously-invalid input,
         #  to save cost of http connection.
         final_query = query.strip().strip(";")
-        es = self.conn
+        es = self.connection
 
         try:
             data = es.transport.perform_request(
@@ -152,5 +146,5 @@ class ESExecute:
             if use_console:
                 self._handle_server_closed_connection()
 
-        except RequestError as e:
-            error_printer(e)
+        except RequestError as error:
+            click.secho(message=str(error.info), fg="red")

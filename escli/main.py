@@ -6,7 +6,7 @@ import sys
 from elasticsearch.exceptions import ConnectionError
 
 from .config import config_location
-from .executor import ESExecute
+from .executor import ESExecutor
 from .utils import OutputSettings
 from .escli import ESCli
 from .formatter import Formatter
@@ -86,7 +86,8 @@ def cli(
     # handle single query without more interaction with user
     if is_single_query:
         try:
-            es_executor = ESExecute(endpoint, http_auth)
+            es_executor = ESExecutor(endpoint, http_auth)
+            es_executor.set_connection()
             if explain:
                 output = es_executor.execute_query(
                     query, explain=True, use_console=False

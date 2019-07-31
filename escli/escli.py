@@ -4,6 +4,8 @@ import click
 import re
 import pyfiglet
 import sys
+import os
+import json
 
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.enums import DEFAULT_BUFFER
@@ -19,10 +21,9 @@ from pygments.lexers.sql import SqlLexer
 from elasticsearch.exceptions import ConnectionError
 
 from .config import get_config
-from .executor import ESExecute
+from .executor import ESExecutor
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
-from .esliterals.main import get_literals
 from .formatter import Formatter
 from .utils import OutputSettings
 from .__init__ import __version__
@@ -37,13 +38,16 @@ click.disable_unicode_literals_warning = True
 class ESCli:
     """ESCli instance is used to build and run the ES SQL CLI."""
 
-    def __init__(self, esclirc_file=None, esexecute=None, always_use_pager=False):
+    def __init__(self, esclirc_file=None, always_use_pager=False):
         # Load conf file
         config = self.config = get_config(esclirc_file)
+        literal = self.literal = self._get_literals()
 
         self.prompt_app = None
-        self.esexecute = esexecute
+        self.es_executor = None
         self.always_use_pager = always_use_pager
+        self.keywords_list = literal["keywords"]
+        self.functions_list = literal["functions"]
         self.syntax_style = config["main"]["syntax_style"]
         self.cli_style = config["colors"]
         self.table_format = config["main"]["table_format"]
@@ -55,12 +59,9 @@ class ESCli:
 
     def _build_cli(self):
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
-        keywords_list = get_literals("keywords")
-        functions_list = get_literals("functions")
-        indices_list = self.esexecute.indices_list
-
+        indices_list = self.es_executor.indices_list
         sql_completer = WordCompleter(
-            keywords_list + functions_list + indices_list, ignore_case=True
+            self.keywords_list + self.functions_list + indices_list, ignore_case=True
         )
 
         # https://stackoverflow.com/a/13726418 denote multiple unused arguments of callback in Python
@@ -109,9 +110,9 @@ class ESCli:
         print(banner)
 
         # print info on the welcome page
-        print("Server: Open Distro for ES %s" % self.esexecute.es_version)
-        print("Version: %s" % __version__)
-        print("Endpoint: %s" % self.esexecute.endpoint)
+        print("Server: Open Distro for ES %s" % self.es_executor.es_version)
+        print("CLI Version: %s" % __version__)
+        print("Endpoint: %s" % self.es_executor.endpoint)
 
         while True:
             try:
@@ -122,7 +123,7 @@ class ESCli:
                 break  # Control-D pressed.
 
             try:
-                output = self.esexecute.execute_query(text)
+                output = self.es_executor.execute_query(text)
                 if output:
                     formatter = Formatter(settings)
                     formatted_output = formatter.format_output(output)
@@ -159,10 +160,20 @@ class ESCli:
             click.echo(text, color=color)
 
     def connect(self, endpoint, http_auth=None):
-        try:
-            self.esexecute = ESExecute(endpoint, http_auth)
+        self.es_executor = ESExecutor(endpoint, http_auth)
+        self.es_executor.set_connection()
 
-        except ConnectionError as e:
-            click.secho("Can not connect to endpoint %s" % endpoint, fg="red")
-            click.echo(repr(e))
-            sys.exit(0)
+    def _get_literals(self):
+        """Parse "esliterals.json" with literal type of SQL "keywords" and "functions", which
+        are SQL keywords and functions supported by Open Distro SQL Plugin.
+
+        :return: a dict that is parsed from esliterals.json
+        """
+        from escli.esliterals import __file__ as package_root
+
+        package_root = os.path.dirname(package_root)
+
+        literal_file = os.path.join(package_root, "esliterals.json")
+        with open(literal_file) as f:
+            literals = json.load(f)
+            return literals

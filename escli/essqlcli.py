@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import click
 import re
 import pyfiglet
-import sys
 import os
 import json
 
@@ -18,7 +17,6 @@ from prompt_toolkit.layout.processors import (
 )
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from pygments.lexers.sql import SqlLexer
-from elasticsearch.exceptions import ConnectionError
 
 from .config import get_config
 from .executor import ESExecutor
@@ -35,8 +33,8 @@ COLOR_CODE_REGEX = re.compile(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))")
 click.disable_unicode_literals_warning = True
 
 
-class ESCli:
-    """ESCli instance is used to build and run the ES SQL CLI."""
+class ESSqlCli:
+    """ESSqlCli instance is used to build and run the ES SQL CLI."""
 
     def __init__(self, esclirc_file=None, always_use_pager=False):
         # Load conf file
@@ -57,7 +55,7 @@ class ESCli:
         self.null_string = config["main"].get("null_string", "null")
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
-    def _build_cli(self):
+    def build_cli(self):
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
         indices_list = self.es_executor.indices_list
         sql_completer = WordCompleter(
@@ -96,7 +94,7 @@ class ESCli:
 
         Run the CLI and keep listening to user's input.
         """
-        self.prompt_app = self._build_cli()
+        self.prompt_app = self.build_cli()
 
         settings = OutputSettings(
             max_width=self.prompt_app.output.get_size().columns,
@@ -116,7 +114,7 @@ class ESCli:
 
         while True:
             try:
-                text = self.prompt_app.prompt(message="escli" + "> ")
+                text = self.prompt_app.prompt(message="escli> ")
             except KeyboardInterrupt:
                 continue  # Control-C pressed. Try again.
             except EOFError:

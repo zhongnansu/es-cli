@@ -12,7 +12,7 @@ def config_location():
     if "XDG_CONFIG_HOME" in os.environ:
         return "%s/escli/" % expanduser(os.environ["XDG_CONFIG_HOME"])
     elif platform.system() == "Windows":
-        return os.getenv("USERPROFILE") + "\\AppData\\Local\\dbcli\\escli\\"
+        return "%s\\AppData\\Local\\dbcli\\escli\\" % os.getenv("USERPROFILE")
     else:
         return expanduser("~/.conf/escli/")
 
@@ -30,15 +30,15 @@ def _load_config(user_config, default_config=None):
 
 def ensure_dir_exists(path):
     """
-    Try to Create conf file in OS.
+    Try to create config file in OS.
 
-    Raise error if file already exists.
+    Ignore existing destination. Raise error for other OSError, such as errno.EACCES (Permission denied),
+    errno.ENOSPC (No space left on device)
     """
     parent_dir = expanduser(dirname(path))
     try:
         os.makedirs(parent_dir)
     except OSError as exc:
-        # ignore existing destination (py2 has no exist_ok arg to makedirs)
         if exc.errno != errno.EEXIST:
             raise
 
@@ -49,7 +49,6 @@ def _write_default_config(source, destination, overwrite=False):
         return
 
     ensure_dir_exists(destination)
-
     shutil.copyfile(source, destination)
 
 

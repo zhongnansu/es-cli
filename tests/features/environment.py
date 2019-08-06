@@ -38,22 +38,21 @@ def before_all(context):
 
     vi = "_".join([str(x) for x in sys.version_info[:3]])
 
-
-    # Store get params from config.
+    # Store get params from conf.
     context.conf = {
-        # "host": context.config.userdata.get(
+        # "host": context.conf.userdata.get(
         #     "pg_test_host", os.getenv("PGHOST", "localhost")
         # ),
-        # "user": context.config.userdata.get(
+        # "user": context.conf.userdata.get(
         #     "pg_test_user", os.getenv("PGUSER", "postgres")
         # ),
-        # "pass": context.config.userdata.get(
+        # "pass": context.conf.userdata.get(
         #     "pg_test_pass", os.getenv("PGPASSWORD", None)
         # ),
-        # "port": context.config.userdata.get(
+        # "port": context.conf.userdata.get(
         #     "pg_test_port", os.getenv("PGPORT", "5432")
         # ),
-        "endpoint": 'http://localhost:9200',
+        "endpoint": "http://localhost:9200",
         "cli_command": (
             context.config.userdata.get("es_cli_command", None)
             or '{python} -c "{startup}"'.format(
@@ -79,13 +78,13 @@ def before_all(context):
 
     # Store old env vars.
     context.esenv = {
-    #     "PGDATABASE": os.environ.get("PGDATABASE", None),
-    #     "PGUSER": os.environ.get("PGUSER", None),
-    #     "PGHOST": os.environ.get("PGHOST", None),
-    #     "PGPASSWORD": os.environ.get("PGPASSWORD", None),
-    #     "PGPORT": os.environ.get("PGPORT", None),
+        #     "PGDATABASE": os.environ.get("PGDATABASE", None),
+        #     "PGUSER": os.environ.get("PGUSER", None),
+        #     "PGHOST": os.environ.get("PGHOST", None),
+        #     "PGPASSWORD": os.environ.get("PGPASSWORD", None),
+        #     "PGPORT": os.environ.get("PGPORT", None),
         "XDG_CONFIG_HOME": os.environ.get("XDG_CONFIG_HOME", None),
-    #     "PGSERVICEFILE": os.environ.get("PGSERVICEFILE", None),
+        #     "PGSERVICEFILE": os.environ.get("PGSERVICEFILE", None),
     }
 
     # # Set new env vars.
@@ -102,14 +101,11 @@ def before_all(context):
     #         del os.environ["PGPASSWORD"]
 
     context.cn = es_utils.get_connection()
-    doc = {
-        'a': 'aws'
-    }
+    doc = {"a": "aws"}
     es_utils.create_index(context.cn)
     es_utils.load_data(context.cn, doc)
 
-
-    # use temporary directory as config home
+    # use temporary directory as conf home
     context.env_config_home = tempfile.mkdtemp(prefix="escli_home_")
     os.environ["XDG_CONFIG_HOME"] = context.env_config_home
     show_env_changes(env_old, dict(os.environ))
@@ -117,14 +113,14 @@ def before_all(context):
 
 def show_env_changes(env_old, env_new):
     """Print out all test-specific env values."""
-    print ("--- os.environ changed values: ---")
+    print("--- os.environ changed values: ---")
     all_keys = set(list(env_old.keys()) + list(env_new.keys()))
     for k in sorted(all_keys):
         old_value = env_old.get(k, "")
         new_value = env_new.get(k, "")
         if new_value and old_value != new_value:
-            print ('{}="{}"'.format(k, new_value))
-    print ("-" * 20)
+            print('{}="{}"'.format(k, new_value))
+    print("-" * 20)
 
 
 def after_all(context):
@@ -133,7 +129,7 @@ def after_all(context):
     """
     es_utils.delete_index(context.cn)
 
-    # Remove temp config direcotry
+    # Remove temp conf direcotry
     shutil.rmtree(context.env_config_home)
 
     # Restore env vars.
@@ -152,6 +148,7 @@ def before_scenario(context, scenario):
     if scenario.name == "list databases":
         # not using the cli for that
         return
+    # wrappers.build_cli(context)
     wrappers.run_cli(context)
     wrappers.wait_prompt(context)
 
@@ -168,7 +165,7 @@ def after_scenario(context, scenario):
         try:
             context.cli.expect_exact(pexpect.EOF, timeout=15)
         except pexpect.TIMEOUT:
-            print ("--- after_scenario {}: kill cli".format(scenario.name))
+            print("--- after_scenario {}: kill cli".format(scenario.name))
             context.cli.kill(signal.SIGKILL)
     if hasattr(context, "tmpfile_sql_help") and context.tmpfile_sql_help:
         context.tmpfile_sql_help.close()

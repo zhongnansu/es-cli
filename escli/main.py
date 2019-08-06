@@ -3,12 +3,11 @@ from __future__ import unicode_literals
 import click
 import sys
 
-from elasticsearch.exceptions import ConnectionError
 
 from .config import config_location
 from .executor import ESExecutor
 from .utils import OutputSettings
-from .escli import ESCli
+from .essqlcli import ESSqlCli
 from .formatter import Formatter
 
 click.disable_unicode_literals_warning = True
@@ -79,42 +78,29 @@ def cli(
     else:
         http_auth = None
 
-    is_single_query = query is not None
-
     # TODO add validation for endpoint to avoid the cost of connecting to some obviously invalid endpoint
 
     # handle single query without more interaction with user
-    if is_single_query:
-        try:
-            es_executor = ESExecutor(endpoint, http_auth)
-            es_executor.set_connection()
-            if explain:
-                output = es_executor.execute_query(
-                    query, explain=True, use_console=False
-                )
-            else:
-                output = es_executor.execute_query(
-                    query, output_format=result_format, use_console=False
-                )
-                if output and result_format == "jdbc":
-                    settings = OutputSettings(
-                        table_format="psql", is_vertical=is_vertical
-                    )
+    if query:
+        es_executor = ESExecutor(endpoint, http_auth)
+        es_executor.set_connection()
+        if explain:
+            output = es_executor.execute_query(query, explain=True, use_console=False)
+        else:
+            output = es_executor.execute_query(
+                query, output_format=result_format, use_console=False
+            )
+            if output and result_format == "jdbc":
+                settings = OutputSettings(table_format="psql", is_vertical=is_vertical)
+                formatter = Formatter(settings)
+                output = formatter.format_output(output)
+                output = "\n".join(output)
 
-                    formatter = Formatter(settings)
-                    output = formatter.format_output(output)
-                    output = "\n".join(output)
-
-            click.echo(output)
-            sys.exit(0)
-
-        except ConnectionError as e:
-            click.secho("Can not connect to endpoint %s" % endpoint, fg="red")
-            click.echo(repr(e))
-            sys.exit(0)
+        click.echo(output)
+        sys.exit(0)
 
     # use console to interact with user
-    escli = ESCli(esclirc_file=esclirc, always_use_pager=always_use_pager)
+    escli = ESSqlCli(esclirc_file=esclirc, always_use_pager=always_use_pager)
     escli.connect(endpoint, http_auth)
     escli.run_cli()
 

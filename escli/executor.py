@@ -25,7 +25,9 @@ class ESExecutor:
         :param http_auth: a tuple in the format of (username, password)
         """
         self.connection = None
+        self.ssl_context = None
         self.es_version = None
+        self.aws_auth = None
         self.indices_list = []
         self.endpoint = endpoint
         self.http_auth = http_auth
@@ -41,13 +43,13 @@ class ESExecutor:
 
         credentials = session.get_credentials()
         region = session.region_name
-        awsauth = AWS4Auth(
+        aws_auth = self.aws_auth = AWS4Auth(
             credentials.access_key, credentials.secret_key, region, service
         )
 
         aes_client = Elasticsearch(
             hosts=[{"host": str(self.endpoint), "port": 443}],
-            http_auth=awsauth,
+            http_auth=aws_auth,
             use_ssl=True,
             verify_certs=True,
             connection_class=RequestsHttpConnection,
@@ -56,7 +58,7 @@ class ESExecutor:
         return aes_client
 
     def get_open_distro_client(self):
-        ssl_context = create_ssl_context()
+        ssl_context = self.ssl_context = create_ssl_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
 
@@ -96,23 +98,24 @@ class ESExecutor:
                 # re-throw error
                 raise error
             else:
-                click.secho("Can not connect to endpoint %s" % self.endpoint, fg="red")
+                click.secho(
+                    message="Can not connect to endpoint %s" % self.endpoint, fg="red"
+                )
                 click.echo(repr(error))
                 sys.exit(0)
 
-    def _handle_server_closed_connection(self):
+    def handle_server_close_connection(self):
         """Used during CLI execution."""
         try:
             click.secho("Reconnecting...", fg="green")
             self.set_connection(is_reconnect=True)
             click.secho("Reconnected! Please run query again", fg="green")
-
         except ConnectionError as reconnection_err:
             click.secho(
                 "Connection Failed. Check your ES is running and then come back",
                 fg="red",
             )
-            click.secho(str(reconnection_err), err=True, fg="red")
+            click.secho(repr(reconnection_err), err=True, fg="red")
 
     def execute_query(
         self, query, output_format="jdbc", explain=False, use_console=True
@@ -144,7 +147,6 @@ class ESExecutor:
         # handle connection lost during execution
         except ConnectionError:
             if use_console:
-                self._handle_server_closed_connection()
-
+                self.handle_server_close_connection()
         except RequestError as error:
-            click.secho(message=str(error.info), fg="red")
+            click.secho(message=str(error.info["error"]), fg="red")

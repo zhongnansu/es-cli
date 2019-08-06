@@ -6,10 +6,6 @@ This string is used to call the step in "*.feature" file.
 """
 from __future__ import unicode_literals, print_function
 
-import pexpect
-import subprocess
-import tempfile
-
 from behave import when, then
 from textwrap import dedent
 import tests.features.steps.wrappers as wrappers
@@ -24,9 +20,7 @@ def step_run_cli_using_arg(context, arg):
 
         prompt_check = False
 
-    wrappers.run_cli(
-        context, run_args=[arg], prompt_check=prompt_check
-    )
+    wrappers.run_cli(context, run_args=[arg], prompt_check=prompt_check)
 
 
 @then("we see query output")

@@ -72,7 +72,8 @@ class Formatter:
 
         if total_hits > 200:
             output_message += (
-                "\n" + "Attention: Use LIMIT keyword when retrieving more than 200 rows of data"
+                "\n"
+                + "Attention: Use LIMIT keyword when retrieving more than 200 rows of data"
             )
 
         # check width overflow, change format_name for better visual effect

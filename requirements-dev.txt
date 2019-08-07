@@ -1,6 +1,5 @@
 pytest==4.6.3
 mock==3.0.5
-behave==1.2.6
 pexpect==3.3
 twine==1.13.0
 coverage==4.3.4

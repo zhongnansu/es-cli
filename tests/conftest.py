@@ -1,5 +1,9 @@
-import pytest
+"""
+We can define the fixture functions in this file to make them
+accessible across multiple test modules.
+"""
 import os
+import pytest
 
 from utils import create_index, delete_index, get_connection
 
@@ -16,6 +20,7 @@ def connection():
 @pytest.fixture(scope="function")
 def default_config_location():
     from escli.conf import __file__ as package_root
+
     package_root = os.path.dirname(package_root)
     default_config = os.path.join(package_root, "esclirc")
 

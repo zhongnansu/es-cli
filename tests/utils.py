@@ -1,13 +1,13 @@
-from elasticsearch import ConnectionError, helpers, ConnectionPool
 import json
 import pytest
+from elasticsearch import ConnectionError, helpers, ConnectionPool
 
 from escli.executor import ESExecutor
 from escli.utils import OutputSettings
 from escli.formatter import Formatter
 
 TEST_INDEX_NAME = "escli_test"
-HOST = "http://localhost:9200"
+ENDPOINT = "http://localhost:9200"
 
 
 def create_index(test_executor):
@@ -45,24 +45,10 @@ def load_data(test_executor, doc):
 
 
 def get_connection():
-    test_executor = ESExecutor(endpoint=HOST)
-    test_executor.set_connection()
+    test_es_executor = ESExecutor(endpoint=ENDPOINT)
+    test_es_executor.set_connection()
 
-    return test_executor
-
-
-try:
-    connection = get_connection()
-    CAN_CONNECT_TO_ES = True
-
-except ConnectionError:
-    CAN_CONNECT_TO_ES = False
-
-
-estest = pytest.mark.skipif(
-    not CAN_CONNECT_TO_ES,
-    reason="Need a Elasticsearch server running at localhost PORT 9200 accessible",
-)
+    return test_es_executor
 
 
 def run(test_executor, query, use_console=True):
@@ -75,3 +61,19 @@ def run(test_executor, query, use_console=True):
         res = "\n".join(res)
 
         return res
+
+
+# build connection for testing
+try:
+    connection = get_connection()
+    CAN_CONNECT_TO_ES = True
+
+except ConnectionError:
+    CAN_CONNECT_TO_ES = False
+
+# use @estest annotation to mark test functions
+estest = pytest.mark.skipif(
+    not CAN_CONNECT_TO_ES,
+    reason="Need a Elasticsearch server running at localhost:9200 accessible",
+)
+

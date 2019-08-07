@@ -8,7 +8,7 @@
 
     == Connection ==
     * [done] Check connecting to a local database.
-    * [ ] Check lost-connection during execution scenario. (Behave)
+    * [done] Check lost-connection during execution scenario.
     * [done] Test connection fail when connect to invalid endpoint
 
 
@@ -18,21 +18,11 @@
     * [done] Test config.
 
 
-    == Nested commands with params == (Behave)
-    * [ ] Test write result to a file.
-    * [ ] Test explain param
-    * [ ] Test query and format param
-    * [ ] Test vertical param
-
-
-    == Auto completion ==
-    * [ ] Input empty string, ask for completions - Everything.
-    * [ ] Input partial prefix, ask for completions - Stars with prefix.
-    * [ ] Input fully autocompleted string, ask for completions - Only full match.
-    * [ ] Input non-existent prefix, ask for completions - nothing.
-    * [ ] Input lowercase prefix - case insensitive completions.
-    * [ ] Input SELECT * FROM - Table names only.
-
+    == Nested commands with params ==
+    * [done] Test write result to a file.
+    * [done] Test explain param
+    * [done] Test query and format param
+    * [done] Test vertical param
 
     == Cross-Platform availability ==
-    * [Done] Manually test on Linux, Windows and mac-os.
+    * [done] Manually test on Linux, Windows and mac-os.

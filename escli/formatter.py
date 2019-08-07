@@ -70,7 +70,8 @@ class Formatter:
         output = formatter.format_output(datarows, fields, **self.output_kwargs)
         output_message = "data retrieved / total hits = %d/%d" % (cur_size, total_hits)
 
-        if total_hits > 200:
+        # Open Distro for ES sql has a restriction of retrieving 200 rows of data by default
+        if total_hits > 200 == cur_size:
             output_message += (
                 "\n"
                 + "Attention: Use LIMIT keyword when retrieving more than 200 rows of data"

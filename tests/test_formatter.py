@@ -129,6 +129,33 @@ class TestFormatter:
 
         assert "\n".join(expanded_results) == "\n".join(expanded)
 
+    def test_fake_large_output(self):
+        settings = OutputSettings(table_format="psql")
+        formatter = Formatter(settings)
+        fake_large_data = {
+            "schema": [
+                {"name": "name", "type": "text"},
+                {"name": "age", "type": "long"},
+            ],
+            "total": 1000,
+            "datarows": [["Tim", [24, 25]]],
+            "size": 200,
+            "status": 200,
+        }
+
+        results = formatter.format_output(fake_large_data)
+
+        expected = [
+            "data retrieved / total hits = 200/1000\n"
+            "Attention: Use LIMIT keyword when retrieving more than 200 rows of data",
+            "+--------+---------+",
+            "| name   | age     |",
+            "|--------+---------|",
+            "| Tim    | [24,25] |",
+            "+--------+---------+",
+        ]
+        assert list(results) == expected
+
     @pytest.mark.parametrize(
         "term_height,term_width,text,use_pager", pager_test_data, ids=test_ids
     )

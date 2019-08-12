@@ -22,17 +22,13 @@ def before_all(context):
     os.environ["EDITOR"] = "ex"
     os.environ["VISUAL"] = "ex"
 
-    context.package_root = os.path.abspath(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    )
+    context.package_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     fixture_dir = os.path.join(context.package_root, "tests/features/fixture_data")
 
     print("package root:", context.package_root)
     print("fixture dir:", fixture_dir)
 
-    os.environ["COVERAGE_PROCESS_START"] = os.path.join(
-        context.package_root, ".coveragerc"
-    )
+    os.environ["COVERAGE_PROCESS_START"] = os.path.join(context.package_root, ".coveragerc")
 
     context.exit_sent = False
 
@@ -58,12 +54,7 @@ def before_all(context):
             or '{python} -c "{startup}"'.format(
                 python=sys.executable,
                 startup="; ".join(
-                    [
-                        "import coverage",
-                        "coverage.process_startup()",
-                        "import escli.main",
-                        "escli.main.cli()",
-                    ]
+                    ["import coverage", "coverage.process_startup()", "import escli.main", "escli.main.cli()"]
                 ),
             )
         ),

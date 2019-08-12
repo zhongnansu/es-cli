@@ -1,28 +1,29 @@
  = Test Plan =
 
     == Display ==
-    * [done] Test pagination with different output length / width.
-    * [done] Test table formatted output.
-    * [done] Test successful convertion from horizontal to vertical with confirmation.
+    * [ ] Test pagination with different output length / width.
+    * [ ] Test table formatted output.
+    * [ ] Test successful conversion from horizontal to vertical with confirmation.
+    * [ ] Test output message when large output > 200 rows of data.
 
 
     == Connection ==
-    * [done] Check connecting to a local database.
-    * [done] Check lost-connection during execution scenario.
-    * [done] Test connection fail when connect to invalid endpoint
-
+    * [ ] Test connecting to a local database.
+    * [ ] Test connection fail when connect to invalid endpoint
+    * [ ] Test reconnection when connection lost during execution
+    & [ ] Test client selection when connection to different type of endpoint(Open Distro, Local ES, AES)
 
     == Execution ==
-    * [done] Test successful execution given a query.
-    * [done] Test unsuccessful execution with a invalid SQL query.
-    * [done] Test config.
+    * [ ] Test successful execution given a query.
+    * [ ] Test unsuccessful execution with a invalid SQL query.
+    * [ ] Test load config
 
 
     == Nested commands with params ==
-    * [done] Test write result to a file.
-    * [done] Test explain param
-    * [done] Test query and format param
-    * [done] Test vertical param
+    * [ ] Test write query result to a file.
+    * [ ] Test explain option
+    * [ ] Test query and format option
+    * [ ] Test vertical option
 
     == Cross-Platform availability ==
-    * [done] Manually test on Linux, Windows and mac-os.
+    * [ ] Manually test on Linux, Windows and mac-os.

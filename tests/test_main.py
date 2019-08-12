@@ -1,3 +1,17 @@
+"""
+Copyright 2019, Amazon Web Services Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import mock
 from textwrap import dedent
 
@@ -22,7 +36,7 @@ class TestMain:
         expected_output = {"from": 0, "size": 200}
         expected_tabular_output = dedent(
             """\
-            data retrieved / total hits = 1/1
+            fetched rows / total rows = 1/1
             +-----+
             | a   |
             |-----|
@@ -30,9 +44,7 @@ class TestMain:
             +-----+"""
         )
 
-        with mock.patch("escli.main.click.echo") as mock_echo, mock.patch(
-            "escli.main.click.secho"
-        ) as mock_secho:
+        with mock.patch("escli.main.click.echo") as mock_echo, mock.patch("escli.main.click.secho") as mock_secho:
             runner = CliRunner()
 
             # test -q -e

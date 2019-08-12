@@ -2,7 +2,7 @@ from elasticsearch import ConnectionError, helpers, ConnectionPool
 import json
 import pytest
 
-from escli.executor import ESExecutor
+from escli.esconnection import ESConnection
 from escli.utils import OutputSettings
 from escli.formatter import Formatter
 
@@ -46,7 +46,7 @@ def load_data(test_executor, doc):
 
 def get_connection():
 
-    test_executor = ESExecutor(endpoint=HOST)
+    test_executor = ESConnection(endpoint=HOST)
     test_executor.set_connection()
 
     return test_executor
@@ -61,8 +61,7 @@ except ConnectionError:
 
 
 estest = pytest.mark.skipif(
-    not CAN_CONNECT_TO_ES,
-    reason="Need a Elasticsearch node running at localhost PORT 9200 accessible",
+    not CAN_CONNECT_TO_ES, reason="Need a Elasticsearch node running at localhost PORT 9200 accessible"
 )
 
 

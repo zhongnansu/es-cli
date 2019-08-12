@@ -29,7 +29,7 @@ def step_see_output(context):
         context,
         expected=dedent(
             """\
-            data retrieved / total hits = 1/1\r
+            fetched rows / total rows = 1/1\r
             +-----+\r
             | a   |\r
             |-----|\r

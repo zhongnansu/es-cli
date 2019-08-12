@@ -43,11 +43,7 @@ def expect_exact(context, expected, timeout):
 
 
 def expect_pager(context, expected, timeout):
-    expect_exact(
-        context,
-        "{0}\r\n{1}{0}\r\n".format(context.conf["pager_boundary"], expected),
-        timeout=timeout,
-    )
+    expect_exact(context, "{0}\r\n{1}{0}\r\n".format(context.conf["pager_boundary"], expected), timeout=timeout)
 
 
 def run_cli(context, run_args=None, prompt_check=True):

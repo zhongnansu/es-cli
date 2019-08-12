@@ -1,3 +1,17 @@
+"""
+Copyright 2019, Amazon Web Services Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 from __future__ import unicode_literals, print_function
 
 import mock
@@ -46,10 +60,7 @@ class TestFormatter:
         settings = OutputSettings(table_format="psql")
         formatter = Formatter(settings)
         data = {
-            "schema": [
-                {"name": "name", "type": "text"},
-                {"name": "age", "type": "long"},
-            ],
+            "schema": [{"name": "name", "type": "text"}, {"name": "age", "type": "long"}],
             "total": 1,
             "datarows": [["Tim", 24]],
             "size": 1,
@@ -59,7 +70,7 @@ class TestFormatter:
         results = formatter.format_output(data)
 
         expected = [
-            "data retrieved / total hits = 1/1",
+            "fetched rows / total rows = 1/1",
             "+--------+-------+",
             "| name   | age   |",
             "|--------+-------|",
@@ -72,10 +83,7 @@ class TestFormatter:
         settings = OutputSettings(table_format="psql")
         formatter = Formatter(settings)
         data = {
-            "schema": [
-                {"name": "name", "type": "text"},
-                {"name": "age", "type": "long"},
-            ],
+            "schema": [{"name": "name", "type": "text"}, {"name": "age", "type": "long"}],
             "total": 1,
             "datarows": [["Tim", [24, 25]]],
             "size": 1,
@@ -85,7 +93,7 @@ class TestFormatter:
         results = formatter.format_output(data)
 
         expected = [
-            "data retrieved / total hits = 1/1",
+            "fetched rows / total rows = 1/1",
             "+--------+---------+",
             "| name   | age     |",
             "|--------+---------|",
@@ -98,10 +106,7 @@ class TestFormatter:
         settings = OutputSettings(table_format="psql", max_width=1)
         formatter = Formatter(settings)
         data = {
-            "schema": [
-                {"name": "name", "type": "text"},
-                {"name": "age", "type": "long"},
-            ],
+            "schema": [{"name": "name", "type": "text"}, {"name": "age", "type": "long"}],
             "total": 1,
             "datarows": [["Tim", 24]],
             "size": 1,
@@ -109,23 +114,17 @@ class TestFormatter:
         }
 
         expanded = [
-            "data retrieved / total hits = 1/1",
+            "fetched rows / total rows = 1/1",
             "-[ RECORD 1 ]-------------------------",
             "name | Tim",
             "age  | 24",
         ]
 
-        with mock.patch("escli.main.click.secho") as mock_secho, mock.patch(
-            "escli.main.click.confirm"
-        ) as mock_confirm:
+        with mock.patch("escli.main.click.secho") as mock_secho, mock.patch("escli.main.click.confirm") as mock_confirm:
             expanded_results = formatter.format_output(data)
 
-        mock_secho.assert_called_with(
-            message="Output longer than terminal width", fg="red"
-        )
-        mock_confirm.assert_called_with(
-            "Do you want to display data vertically for better visual effect?"
-        )
+        mock_secho.assert_called_with(message="Output longer than terminal width", fg="red")
+        mock_confirm.assert_called_with("Do you want to display data vertically for better visual effect?")
 
         assert "\n".join(expanded_results) == "\n".join(expanded)
 
@@ -133,10 +132,7 @@ class TestFormatter:
         settings = OutputSettings(table_format="psql")
         formatter = Formatter(settings)
         fake_large_data = {
-            "schema": [
-                {"name": "name", "type": "text"},
-                {"name": "age", "type": "long"},
-            ],
+            "schema": [{"name": "name", "type": "text"}, {"name": "age", "type": "long"}],
             "total": 1000,
             "datarows": [["Tim", [24, 25]]],
             "size": 200,
@@ -146,7 +142,7 @@ class TestFormatter:
         results = formatter.format_output(fake_large_data)
 
         expected = [
-            "data retrieved / total hits = 200/1000\n"
+            "fetched rows / total rows = 200/1000\n"
             "Attention: Use LIMIT keyword when retrieving more than 200 rows of data",
             "+--------+---------+",
             "| name   | age     |",
@@ -156,14 +152,10 @@ class TestFormatter:
         ]
         assert list(results) == expected
 
-    @pytest.mark.parametrize(
-        "term_height,term_width,text,use_pager", pager_test_data, ids=test_ids
-    )
+    @pytest.mark.parametrize("term_height,term_width,text,use_pager", pager_test_data, ids=test_ids)
     def test_pager(self, term_height, term_width, text, use_pager, pset_pager_mocks):
         cli, mock_echo, mock_echo_via_pager, mock_cli = pset_pager_mocks
-        mock_cli.output.get_size.return_value = self.termsize(
-            rows=term_height, columns=term_width
-        )
+        mock_cli.output.get_size.return_value = self.termsize(rows=term_height, columns=term_width)
 
         cli.echo_via_pager(text)
 

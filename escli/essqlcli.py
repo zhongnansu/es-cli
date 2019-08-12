@@ -1,3 +1,17 @@
+"""
+Copyright 2019, Amazon Web Services Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 from __future__ import unicode_literals
 
 import click
@@ -11,15 +25,12 @@ from prompt_toolkit.enums import DEFAULT_BUFFER
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.filters import HasFocus, IsDone
 from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.layout.processors import (
-    ConditionalProcessor,
-    HighlightMatchingBracketProcessor,
-)
+from prompt_toolkit.layout.processors import ConditionalProcessor, HighlightMatchingBracketProcessor
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from pygments.lexers.sql import SqlLexer
 
 from .config import get_config
-from .executor import ESExecutor
+from .esconnection import ESConnection
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
 from .formatter import Formatter
@@ -58,9 +69,7 @@ class ESSqlCli:
     def build_cli(self):
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
         indices_list = self.es_executor.indices_list
-        sql_completer = WordCompleter(
-            self.keywords_list + self.functions_list + indices_list, ignore_case=True
-        )
+        sql_completer = WordCompleter(self.keywords_list + self.functions_list + indices_list, ignore_case=True)
 
         # https://stackoverflow.com/a/13726418 denote multiple unused arguments of callback in Python
         def get_continuation(width, *_):
@@ -136,10 +145,7 @@ class ESSqlCli:
         """Will this line be too wide to fit into terminal?"""
         if not self.prompt_app:
             return False
-        return (
-            len(COLOR_CODE_REGEX.sub("", line))
-            > self.prompt_app.output.get_size().columns
-        )
+        return len(COLOR_CODE_REGEX.sub("", line)) > self.prompt_app.output.get_size().columns
 
     def is_too_tall(self, lines):
         """Are there too many lines to fit into terminal?"""
@@ -158,7 +164,7 @@ class ESSqlCli:
             click.echo(text, color=color)
 
     def connect(self, endpoint, http_auth=None):
-        self.es_executor = ESExecutor(endpoint, http_auth)
+        self.es_executor = ESConnection(endpoint, http_auth)
         self.es_executor.set_connection()
 
     def _get_literals(self):

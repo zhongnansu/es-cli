@@ -27,9 +27,10 @@ from prompt_toolkit.filters import HasFocus, IsDone
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.layout.processors import ConditionalProcessor, HighlightMatchingBracketProcessor
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.history import FileHistory
 from pygments.lexers.sql import SqlLexer
 
-from .config import get_config
+from .config import get_config, config_location
 from .esconnection import ESConnection
 from .esbuffer import es_is_multiline
 from .esstyle import style_factory, style_factory_output
@@ -64,12 +65,19 @@ class ESSqlCli:
         self.multi_line = config["main"].as_bool("multi_line")
         self.multiline_mode = config["main"].get("multi_line_mode", "escli")
         self.null_string = config["main"].get("null_string", "null")
+        self.history_file = config["main"]["history_file"]
         self.style_output = style_factory_output(self.syntax_style, self.cli_style)
 
     def build_cli(self):
         # TODO: Optimize index suggestion to serve indices options only at the needed position, such as 'from'
+        # set completer
         indices_list = self.es_executor.indices_list
         sql_completer = WordCompleter(self.keywords_list + self.functions_list + indices_list, ignore_case=True)
+
+        # set history
+        if self.history_file == "default":
+            self.history_file = config_location() + "history"
+        history = FileHistory(os.path.expanduser(self.history_file))
 
         # https://stackoverflow.com/a/13726418 denote multiple unused arguments of callback in Python
         def get_continuation(width, *_):
@@ -80,8 +88,7 @@ class ESSqlCli:
             lexer=PygmentsLexer(SqlLexer),
             completer=sql_completer,
             complete_while_typing=True,
-            # TODO: add history, refer to pgcli approach
-            # history=history,
+            history=history,
             style=style_factory(self.syntax_style, self.cli_style),
             prompt_continuation=get_continuation,
             multiline=es_is_multiline(self),

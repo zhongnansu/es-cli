@@ -18,7 +18,7 @@ import ast
 from setuptools import setup, find_packages
 
 install_requirements = [
-    "click >= 4.1",
+    "click >= 7.0",
     "prompt_toolkit >= 2.0.6",
     "Pygments >= 2.0",
     "cli_helpers[styles] >= 1.2.0",

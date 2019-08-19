@@ -20,6 +20,7 @@ import sys
 import urllib3
 
 from elasticsearch import Elasticsearch, RequestsHttpConnection
+from elasticsearch.client import CatClient
 from elasticsearch.exceptions import ConnectionError, RequestError
 from elasticsearch.connection import create_ssl_context
 from requests_aws4auth import AWS4Auth
@@ -41,6 +42,7 @@ class ESConnection:
         self.client = None
         self.ssl_context = None
         self.es_version = None
+        self.plugins = None
         self.aws_auth = None
         self.indices_list = []
         self.endpoint = endpoint
@@ -80,6 +82,11 @@ class ESConnection:
 
         return open_distro_client
 
+    def sql_plugin_installed(self, es_client):
+        self.plugins = es_client.cat.plugins(params={"s": "component", "v": "true"})
+        sql_plugin_name_list = ["opendistro-sql", "opendistro_sql"]
+        return any(x in self.plugins for x in sql_plugin_name_list)
+
     def set_connection(self, is_reconnect=False):
         urllib3.disable_warnings()
         logging.captureWarnings(True)
@@ -93,14 +100,22 @@ class ESConnection:
         else:
             es_client = Elasticsearch([self.endpoint], verify_certs=True)
 
-        # check client, es.info() may throw ConnectionError
+        # check connection. check Open Distro Elasticsearch SQL plugin availability.
         try:
-            info = es_client.info()
-            es_version = info["version"]["number"]
+            if not self.sql_plugin_installed(es_client):
+                click.secho(
+                    message="Must have Open Distro sql plugin installed in your Elasticsearch "
+                    "instance!\nCheck this out: https://github.com/opendistro-for-elasticsearch/sql",
+                    fg="red",
+                )
+                click.echo(self.plugins)
+                sys.exit()
 
+            # info() may throw ConnectionError, if connection fails to establish
+            info = es_client.info()
+            self.es_version = info["version"]["number"]
             self.client = es_client
             self.get_indices()
-            self.es_version = es_version
 
         except ConnectionError as error:
             if is_reconnect:

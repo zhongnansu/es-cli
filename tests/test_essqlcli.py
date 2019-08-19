@@ -49,8 +49,7 @@ class TestEssqlcli:
 
         # the title is colored by formatter
         expected = (
-            "fetched rows / total rows = 1/1"
-            "\n+-----+\n| \x1b[38;5;47;01ma\x1b[39;00m   |\n|-----|\n| aws |\n+-----+"
+            "fetched rows / total rows = 1/1" "\n+-----+\n| \x1b[38;5;47;01ma\x1b[39;00m   |\n|-----|\n| aws |\n+-----+"
         )
 
         with mock.patch.object(ESSqlCli, "echo_via_pager") as mock_pager, mock.patch.object(

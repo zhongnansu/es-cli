@@ -37,6 +37,9 @@ with open("escli/__init__.py", "rb") as f:
 
 description = "CLI for Elasticsearch Open Distro SQL with auto-completion and syntax highlighting."
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name="escli",
     author="Zhongnan",
@@ -47,12 +50,16 @@ setup(
     packages=find_packages(),
     package_data={"escli": ["conf/esclirc", "esliterals/esliterals.json"]},
     description=description,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     install_requires=install_requirements,
     entry_points={"console_scripts": ["escli=escli.main:cli"]},
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: Unix",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",

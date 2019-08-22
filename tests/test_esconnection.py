@@ -110,13 +110,13 @@ class TestExecutor:
         aes_test_executor = ESConnection(endpoint=AES_ENDPOINT)
 
         with mock.patch.object(od_test_executor, "get_open_distro_client") as mock_od_client, mock.patch.object(
-            ESConnection, "sql_plugin_installed", return_value=True
+            ESConnection, "is_sql_plugin_installed", return_value=True
         ):
             od_test_executor.set_connection()
             mock_od_client.assert_called()
 
         with mock.patch.object(aes_test_executor, "get_aes_client") as mock_aes_client, mock.patch.object(
-            ESConnection, "sql_plugin_installed", return_value=True
+            ESConnection, "is_sql_plugin_installed", return_value=True
         ):
             aes_test_executor.set_connection()
             mock_aes_client.assert_called()
